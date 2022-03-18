@@ -37,6 +37,9 @@ public:
    */
   status step(uint16_t keystate, uint32_t ticks);
 
+  /// Get current value of special register Ia.
+  inline uint8_t reg_I() const { return m_reg_I; };
+
   /// Get current value of delay timer register.
   inline uint8_t reg_DT() const { return m_reg_DT; };
 
@@ -50,6 +53,9 @@ public:
 
   /// Get current memory
   inline std::span<const uint8_t, MEMORY_SIZE> memory() const { return m_mem; };
+
+  /// Get current registers
+  inline std::span<const uint8_t, 16> regs() const { return m_regs; };
 
   /// Get current program counter.
   inline uint16_t pc() const { return m_pc; };

@@ -20,7 +20,6 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
   // We bitshift it to the left since the i-th instruction starts at location
   // 2*i
   uint16_t pc_location = (m_pc & 0xFFF) << 1;
-
   // Opcodes are stored in most-significant-byte-first.
   uint16_t opcode = m_mem.at(pc_location | 1) |
                     (m_mem.at(static_cast<uint16_t>(pc_location)) << 8);
@@ -102,12 +101,10 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
   } break;
 
   case 0x6: {
-    std::cerr << "caught 0x6\n";
     m_regs[x] = kk;
   } break;
 
   case 0x7: {
-    std::cerr << "caught 0x7\n";
     m_regs[x] += kk;
   } break;
 
