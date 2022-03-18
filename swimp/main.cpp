@@ -4,7 +4,7 @@
 
 int main(const int, const char **) {
   using namespace std;
-  statemachine machine(statemachine::instructions(), 0);
+  statemachine machine({0}, 0, 0);
   cout << "Hello World!\n";
   return 0;
 }
