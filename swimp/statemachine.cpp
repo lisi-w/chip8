@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <mutex>
 #include <random>
+#include <vector>
 
 static std::mt19937 random_generator;
 static std::mutex random_mutex;
@@ -12,7 +13,6 @@ statemachine::statemachine(std::array<uint8_t, MEMORY_SIZE> mem, uint16_t pc,
       m_reg_DT(0), m_reg_ST(0) {}
 
 statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
-  statemachine::status ret = NO_ERROR;
 
   // m_pc & 0xFFF masks the program counter, which is 12 bit.
   auto pc_location = (m_pc & 0xFFF) << 1;
@@ -38,17 +38,17 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
     m_reg_ST -= ticks;
   }
 
-  switch (opcode & 0xF000) {
+  switch (opcode >> 12) {
   case 0x0: {
     if (opcode == 0x00E0) {
-      ret = NOT_IMPLEMENTED;
+      m_display.reset();
     } else if (opcode == 0x00EE) {
       if (m_stack.empty()) [[unlikely]] {
         return POPPED_EMPTY_STACK;
       }
       m_pc = m_stack.top();
       m_stack.pop();
-      return ret;
+      return NO_ERROR;
     } else {
       // Ignore SYS
     }
@@ -56,59 +56,65 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
 
   case 0x1: {
     m_pc = nnn;
-    return ret;
+    return NO_ERROR;
   } break;
 
   case 0x2: {
     if (m_stack.size() == STACK_SIZE) [[unlikely]] {
       return PUSHED_FULL_STACK;
+    } else {
+      m_stack.push(m_pc);
+      m_pc = nnn;
+      return NO_ERROR;
     }
-    m_stack.push(m_pc);
-    m_pc = nnn;
-  } break;
+  }
 
   case 0x3: {
-    if (m_regs.at(x) == (opcode & 0xFF)) {
-      ++m_pc;
+    if (m_regs.at(x) == kk) {
+      m_pc += 2;
+      return NO_ERROR;
     }
   } break;
+
   case 0x4: {
-    if (m_regs.at(x) != (opcode & 0xFF)) {
-      ++m_pc;
+    if (m_regs.at(x) != kk) {
+      m_pc += 2;
+      return NO_ERROR;
     }
   } break;
 
   case 0x5: {
     if (m_regs.at(x) == m_regs.at(y)) {
-      ++m_pc;
+      m_pc += 2;
+      return NO_ERROR;
     }
   } break;
 
   case 0x6: {
-    m_regs[x] = opcode & 0xFF;
+    m_regs[x] = kk;
   } break;
 
   case 0x7: {
-    m_regs[x] += opcode & 0xFF;
+    m_regs[x] += kk;
   } break;
 
   case 0x8: {
     switch (opcode & 0xF) {
-    case 0x0:
+    case 0x0: {
       m_regs[x] = m_regs.at(y);
-      break;
+    } break;
 
-    case 0x1:
+    case 0x1: {
       m_regs[x] |= m_regs.at(y);
-      break;
+    } break;
 
-    case 0x2:
+    case 0x2: {
       m_regs[x] &= m_regs.at(y);
-      break;
+    } break;
 
-    case 0x3:
+    case 0x3: {
       m_regs[x] ^= m_regs.at(y);
-      break;
+    } break;
 
     case 0x4: {
       if (x == 0xF) [[unlikely]] {
@@ -124,8 +130,7 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
       if (x == 0xF) [[unlikely]] {
         return VFRACE;
       }
-      bool not_borrow = m_regs.at(x) > m_regs.at(y);
-      m_regs[0xF] = not_borrow ? 1 : 0;
+      m_regs[0xF] = (m_regs.at(x) > m_regs.at(y)) ? 1 : 0;
       m_regs[x] -= m_regs.at(y);
     } break;
 
@@ -141,8 +146,7 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
       if (x == 0xF) [[unlikely]] {
         return VFRACE;
       }
-      bool not_borrow = m_regs.at(y) > m_regs.at(x);
-      m_regs[0xF] = not_borrow ? 1 : 0;
+      m_regs[0xF] = (m_regs.at(y) > m_regs.at(x)) ? 1 : 0;
       m_regs[x] = m_regs.at(y) - m_regs.at(x);
     } break;
 
@@ -155,14 +159,15 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
     } break;
 
     default:
-      ret = NOT_IMPLEMENTED;
+      return NOT_IMPLEMENTED;
     }
     break;
   } break;
 
   case 0x9: {
     if (m_regs.at(x) != m_regs.at(y)) {
-      ++m_pc;
+      m_pc += 2;
+      return NO_ERROR;
     }
   } break;
 
@@ -172,12 +177,12 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
 
   case 0xB: {
     m_pc = nnn + m_regs.at(0);
-    return ret;
+    return NO_ERROR;
   } break;
 
   case 0xC: {
     std::scoped_lock lk(random_mutex);
-    m_regs[x] = random_generator() & 0xFF;
+    m_regs[x] = random_generator() & kk;
     break;
   }
   case 0xD: {
@@ -188,23 +193,28 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
     uint8_t vy = m_regs.at(y);
     m_regs[0xF] = 0;
 
-    for (uint16_t line = vy, end_line = (line + n), sprite_source = m_reg_I,
-                  line_begin_pos = vx + vy * DISPLAY_WIDTH;
-         line < end_line;
-         ++line, ++sprite_source, line_begin_pos += DISPLAY_WIDTH) {
-      auto pos = line_begin_pos;
+    uint16_t line = vy;
+    uint16_t end_line = vy + n;
+    uint16_t sprite_source = m_reg_I;
+    uint16_t line_abs_begin_pos = vy * DISPLAY_WIDTH;
+
+    while (line != end_line) {
+      auto pos_x = vx;
       for (uint8_t bits_to_write = m_mem.at(sprite_source); bits_to_write;
-           bits_to_write <<= 1, ++pos) {
-        if (pos >= m_display.size()) {
-          return DISPLAY_OVERFLOW;
-        }
-        bool current_pixel = m_display.at(pos);
+           bits_to_write <<= 1, pos_x = (pos_x + 1) % DISPLAY_WIDTH) {
+
+        auto pos = line_abs_begin_pos + pos_x;
+        bool current_pixel = m_display[pos];
         bool bit_should_flip = bits_to_write & 0x80;
         if (current_pixel & bit_should_flip) {
           m_regs[0xF] = 1;
         }
-        m_display.at(pos) = current_pixel ^ bit_should_flip;
+        m_display[pos] = current_pixel ^ bit_should_flip;
       }
+      ++line;
+      ++sprite_source;
+      line_abs_begin_pos =
+          (line_abs_begin_pos + DISPLAY_WIDTH) % m_display.size();
     }
   } break;
 
@@ -212,16 +222,18 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
     switch (kk) {
     case 0x9E: {
       if ((keystate >> m_regs.at(x)) & 1) {
-        ++m_pc;
+        m_pc += 2;
+        return NO_ERROR;
       }
     } break;
     case 0xA1: {
       if (!((keystate >> m_regs.at(x)) & 1)) {
-        ++m_pc;
+        m_pc += 2;
+        return NO_ERROR;
       }
     } break;
     default: {
-      ret = NOT_IMPLEMENTED;
+      return NOT_IMPLEMENTED;
     }
     }
     break;
@@ -291,10 +303,14 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
       std::copy(mem_begin, mem_begin + n_to_copy, m_regs.begin());
     } break;
     default:
-      ret = NOT_IMPLEMENTED;
+      return NOT_IMPLEMENTED;
     }
     break;
   }
   ++m_pc;
-  return NOT_IMPLEMENTED;
+  return NO_ERROR;
+}
+
+std::span<const uint16_t> statemachine::instruction_stack::const_view() const {
+  return {c.begin(), c.size()};
 }
