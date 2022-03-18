@@ -2,6 +2,7 @@
 #define SWIMP_STATEMACHINE_H
 
 #include <array>
+#include <bitset>
 #include <cstdint>
 #include <span>
 #include <stack>
@@ -42,11 +43,32 @@ public:
   /// Get current value of sound timer register.
   inline uint8_t reg_ST() const { return m_reg_ST; };
 
+  /// Get current display
+  inline const std::bitset<DISPLAY_WIDTH * DISPLAY_HEIGHT> &display() const {
+    return m_display;
+  };
+
+  /// Get current memory
+  inline std::span<const uint8_t, MEMORY_SIZE> memory() const { return m_mem; };
+
+  /// Get current program counter.
+  inline uint16_t pc() const { return m_pc; };
+
+  /// Get current stack
+  inline std::span<const uint16_t> stack() const {
+    return m_stack.const_view();
+  };
+
 private:
+  class instruction_stack : public std::stack<uint16_t, std::vector<uint16_t>> {
+  public:
+    std::span<const uint16_t> const_view() const;
+  };
+
   std::array<uint8_t, MEMORY_SIZE> m_mem;
-  std::array<uint8_t, DISPLAY_WIDTH * DISPLAY_HEIGHT> m_display;
+  std::bitset<DISPLAY_WIDTH * DISPLAY_HEIGHT> m_display;
   std::array<uint8_t, 16> m_regs;
-  std::stack<uint16_t, std::vector<uint16_t>> m_stack;
+  instruction_stack m_stack;
   uint16_t m_pc;
   uint16_t m_font_begin;
   uint16_t m_reg_I;
