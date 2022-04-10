@@ -15,6 +15,8 @@ public:
   const static int DISPLAY_WIDTH = 64;
   const static int DISPLAY_HEIGHT = 32;
 
+  // Non-negative statuses are those from which the state machine may recover.
+  // Negative statuses are those with overflows.
   enum status {
     NO_ERROR = 0,
     NOT_IMPLEMENTED = 1,
@@ -25,6 +27,7 @@ public:
     MEMORY_OVERFLOW = -5,
     DISPLAY_OVERFLOW = -6,
     IMPOSSIBLE_KEYPRESS_REQUEST = -6,
+    PC_UNALIGNED = -7,
   };
 
   statemachine(std::array<uint8_t, MEMORY_SIZE> mem, uint16_t pc,
