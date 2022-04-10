@@ -1,8 +1,4 @@
 NOTES for keyboard stuff
 
-copy keyboard handling from usbkeyboard.c/h and convert to c++, double check with doc
- - should be good for handling initial communication and getting hex values
-copy key handling, but make bigger case switch for 1234, qwer, asdf, zxcv keys to represent chip8 buttons
-fit all this into functions requested by daniel
 double check syntax matches c++
 test with board using smth like fbputchar.c or have it beep(?) 

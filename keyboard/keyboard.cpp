@@ -2,6 +2,13 @@
 #include <cstdlib>
 #include "keyboard.hpp"
 
+#define ENTER 0x28
+#define ESC 0x29
+#define BACKSPACE 0x2A
+
+#define LEFT 0x50
+#define RIGHT 0x4F
+
 class Keyboard {
 	// define constructor
 	Keyboard(uint8_t *endpoint_addr) {
@@ -69,13 +76,66 @@ class Keyboard {
 			return true;
 	}
 
-	uint16_t get_keys() {
-		uint16_t key = 0x29;
-		return key;
+	char get_keys(struct usb_keyboard_packet packet) {
+		/* maps keyboard to chip8 keys as follows:
+		 * 1 2 3 4        1 2 3 C
+		 * q w e r        4 5 6 D
+		 * a s d f  --->  7 8 9 E
+		 * z x c v        A 0 B F
+		*/
+		switch (packet.keycode[0]) {
+			case 0x1E :
+				return '1';
+			case 0x1F :
+				return '2';
+			case 0x20 :
+				return '3';
+			case 0x21 :
+				return 'C';
+			case 0x14 :
+				return '4';
+			case 0x1A :
+				return '5';
+			case 0x08 :
+				return '6';
+			case 0x15 :
+				return 'D';
+			case 0x04 :
+				return '7';
+			case 0x16 :
+				return '8';
+			case 0x07 :
+				return '9';
+			case 0x09 :
+				return 'E';
+			case 0x1D :
+				return 'A';
+			case 0x1B :
+				return '0';
+			case 0x06 :
+				return 'B';
+			case 0x19 :
+				return 'F';
+			default :
+				return NULL;
+		}
 	}
 
-	uint16_t get_control_keys() {
-		uint16_t key = 0x29;
+	uint16_t get_control_keys(struct usb_keyboard_packet packet) {
+		uint16_t key = NULL;
+		if (packet.keycode[0] == ESC) { /* ESC pressed? */
+			key = ESC;
+		}
+		else if (packet.keycode[0] == 0) key = NULL;
+		else if (packet.keycode[0] == ENTER) {
+			key = ENTER;
+		}
+		else if (packet.keycode[0] == LEFT) {
+			key = LEFT;
+		}
+		else if (packet.keycode[0] == RIGHT) {
+			key = RIGHT;
+		}
 		return key;
 	}
 }
