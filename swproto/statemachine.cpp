@@ -16,14 +16,13 @@ statemachine::statemachine(std::array<uint8_t, MEMORY_SIZE> mem, uint16_t pc,
 
 statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
 
-  // m_pc & 0xFFF masks the program counter to 12 bit.
-  // We bitshift it to the left since the i-th instruction starts at location
-  // 2*i
-  uint16_t pc_location = (m_pc & 0xFFF) << 1;
+  if (m_pc & 1) [[unlikely]] {
+    return PC_UNALIGNED;
+  }
 
   // Opcodes are stored in most-significant-byte-first.
-  uint16_t opcode = m_mem.at(pc_location | 1) |
-                    (m_mem.at(static_cast<uint16_t>(pc_location)) << 8);
+  uint16_t opcode =
+      m_mem.at(m_pc | 1) | (m_mem.at(static_cast<uint16_t>(m_pc)) << 8);
 
   uint16_t nnn = opcode & 0xFFF;
   uint16_t n = opcode & 0xF;
@@ -44,11 +43,9 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
   }
 
   // debugging code for safe keeping.
-  std::cerr << "Running step with opcode  0x" << std::hex << std::setfill('0')
-            << std::setw(4) << opcode << std::endl;
-  std::cerr << "x: 0x" << std::hex << (int)x << ", kk: 0x" << std::hex
-            << (int)kk << std::endl;
-
+  std::cerr << "Executing opcode 0x" << std::hex << std::setfill('0')
+            << std::setw(4) << opcode << '\n';
+  // Grab first hexadigit.
   switch (opcode >> 12) {
   case 0x0: {
     if (opcode == 0x00E0) {
@@ -82,32 +79,30 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
 
   case 0x3: {
     if (m_regs.at(x) == kk) {
-      m_pc += 2;
+      m_pc += 4;
       return NO_ERROR;
     }
   } break;
 
   case 0x4: {
     if (m_regs.at(x) != kk) {
-      m_pc += 2;
+      m_pc += 4;
       return NO_ERROR;
     }
   } break;
 
   case 0x5: {
     if (m_regs.at(x) == m_regs.at(y)) {
-      m_pc += 2;
+      m_pc += 4;
       return NO_ERROR;
     }
   } break;
 
   case 0x6: {
-    std::cerr << "caught 0x6\n";
     m_regs[x] = kk;
   } break;
 
   case 0x7: {
-    std::cerr << "caught 0x7\n";
     m_regs[x] += kk;
   } break;
 
@@ -179,7 +174,7 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
 
   case 0x9: {
     if (m_regs.at(x) != m_regs.at(y)) {
-      m_pc += 2;
+      m_pc += 4;
       return NO_ERROR;
     }
   } break;
@@ -235,13 +230,13 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
     switch (kk) {
     case 0x9E: {
       if ((keystate >> m_regs.at(x)) & 1) {
-        m_pc += 2;
+        m_pc += 4;
         return NO_ERROR;
       }
     } break;
     case 0xA1: {
       if (!((keystate >> m_regs.at(x)) & 1)) {
-        m_pc += 2;
+        m_pc += 4;
         return NO_ERROR;
       }
     } break;
@@ -321,7 +316,7 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
     break;
   }
 
-  ++m_pc;
+  m_pc += 2;
   return NO_ERROR;
 }
 
