@@ -38,7 +38,7 @@ public:
    * @param ticks Number of 60Hz whole ticks that have passed since the last
    * invocation.
    */
-  status step(uint16_t keystate, uint32_t ticks);
+  status step(uint16_t keystate, bool tick);
 
   /// Get current value of special register I.
   inline uint16_t reg_I() const { return m_reg_I; };
