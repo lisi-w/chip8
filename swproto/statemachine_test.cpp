@@ -2,29 +2,32 @@
 #include <algorithm>
 #include <gtest/gtest.h>
 #include <initializer_list>
+#include <sstream>
 
 // Convenience functios for debugging.
 
-void print_regs(const statemachine &mach) {
+std::string regs_of(const statemachine &mach) {
   using namespace std;
-  cerr << "Regs: ";
+  stringstream reg_summary;
+  reg_summary << "Regs: ";
   for (uint8_t reg : mach.regs()) {
-    cerr << hex << setw(2) << setfill('0') << (int)reg << " ";
+    reg_summary << hex << setw(2) << setfill('0') << (int)reg << " ";
   }
-  cerr << endl;
+
+  return reg_summary.str();
 }
 
 inline void
-ASSERT_STEP(statemachine &mach, uint16_t keystate, uint32_t ticks,
+ASSERT_STEP(statemachine &mach, uint16_t keystate, bool tick,
             statemachine::status expected_status = statemachine::NO_ERROR) {
   using namespace std;
 
   auto next_instruction = mach.curr_instruction();
-  auto resultant_status = mach.step(keystate, ticks);
+  auto resultant_status = mach.step(keystate, tick);
 
   ASSERT_EQ(resultant_status, expected_status)
-      << "Executing opcode 0x" << hex << setfill('0') << setw(4) << "\t Got "
-      << resultant_status << " but expected " << expected_status << ".\n";
+      << "while executing opcode 0x" << hex << setfill('0') << setw(4)
+      << next_instruction;
 }
 
 inline std::array<uint8_t, statemachine::MEMORY_SIZE>
@@ -50,11 +53,11 @@ TEST(StateMachineTest, Test6xkk_7xkk) {
   // then add 0xFF to test rollover.
   statemachine machine({0x67, 0x89, 0x77, 0x10, 0x77, 0xFF}, 0, 0);
   EXPECT_EQ(machine.regs()[0x7], 0);
-  EXPECT_EQ(machine.step(0, 0), statemachine::NO_ERROR);
+  ASSERT_STEP(machine, 0, false);
   EXPECT_EQ(machine.regs()[0x7], 0x89);
-  EXPECT_EQ(machine.step(0, 0), statemachine::NO_ERROR);
+  ASSERT_STEP(machine, 0, false);
   EXPECT_EQ(machine.regs()[0x7], 0x99);
-  EXPECT_EQ(machine.step(0, 0), statemachine::NO_ERROR);
+  ASSERT_STEP(machine, 0, false);
   EXPECT_EQ(machine.regs()[0x7], 0x98);
 }
 
@@ -81,7 +84,7 @@ TEST(StateMachineTest, Test1nnn) {
 
   // Make sure we never execute LD V6, 0x66
   for (int i = 0; i < 100; ++i) {
-    ASSERT_EQ(machine.step(0, 1), statemachine::NO_ERROR);
+    ASSERT_STEP(machine, 0, false);
     ASSERT_EQ(machine.regs()[0x6], 0);
   }
 
@@ -106,7 +109,7 @@ TEST(StateMachineTest, Test3xkk_4xkk) {
 
   // 6 instruction should execute.
   for (int i = 0; i < 6; ++i) {
-    ASSERT_EQ(machine.step(0, 1), statemachine::NO_ERROR);
+    ASSERT_STEP(machine, 0, false);
   }
 
   // PC should sit right after the last LD.
@@ -148,7 +151,7 @@ TEST(StateMachineTest, Test5xy0_9xy0) {
   // Run until complete
   int i;
   for (i = 0; (i <= 20) && (machine.memory()[machine.pc()] != 0); ++i) {
-    ASSERT_EQ(machine.step(0, 0), statemachine::NO_ERROR);
+    ASSERT_STEP(machine, 0, false);
   }
 
   ASSERT_NE(i, 20); // Make sure we didn't go somewhere we're not meant to be.
@@ -168,8 +171,7 @@ TEST(StateMachineTest, Test8xy0) {
       },
       0, 0);
 
-  ASSERT_EQ(machine.step(0, 0), statemachine::NO_ERROR);
-  ASSERT_EQ(machine.step(0, 0), statemachine::NO_ERROR);
+  ASSERT_STEP(machine, 0, false);
 
   ASSERT_EQ(machine.regs()[0x0], 0x00); // V0 should never have been set.
   ASSERT_EQ(machine.regs()[0x1], 0x44); // V1 should be 0x44
@@ -205,7 +207,7 @@ TEST(StateMachineTest, Test8xy1_7xy2_8xy3) {
 
   // Execute all 14 instructions.
   for (int i = 0; i < 14; ++i) {
-    ASSERT_EQ(machine.step(0, 0), statemachine::NO_ERROR);
+    ASSERT_STEP(machine, 0, false);
   }
 
   // Check if VA-VF have intended values.
@@ -228,7 +230,7 @@ TEST(StateMachineTest, Test8xy4) {
                        0, 0);
 
   for (int i = 0; i < 5; ++i) {
-    ASSERT_STEP(machine, 0, 0);
+    ASSERT_STEP(machine, 0, false);
   }
 
   ASSERT_EQ(machine.regs()[0x0], 0x04); // 0x82 + 0x82 = 0x104
@@ -251,7 +253,7 @@ TEST(StateMachineTest, Test8xy5) {
                        0, 0);
 
   for (int i = 0; i < 8; ++i) {
-    ASSERT_STEP(machine, 0, 0);
+    ASSERT_STEP(machine, 0, false);
   }
 
   ASSERT_EQ(machine.regs()[0xA], 0x90); // 0x92 - 0x02 = 0x90
@@ -272,7 +274,7 @@ TEST(StateMachineTest, Test8xy6) {
   statemachine machine(instructions_decode(instructions), 0, 0);
 
   for (unsigned i = 0; i < instructions.size(); ++i) {
-    ASSERT_STEP(machine, 0, 0);
+    ASSERT_STEP(machine, 0, false);
   }
 
   ASSERT_EQ(machine.regs()[0x0], 0x49); // (0x92 >> 2) = 0x49
@@ -298,7 +300,7 @@ TEST(StateMachineTest, Test8xy7) {
   statemachine machine(instructions_decode(instructions), 0, 0);
 
   for (unsigned i = 0; i < instructions.size(); ++i) {
-    ASSERT_STEP(machine, 0, 0);
+    ASSERT_STEP(machine, 0, false);
   }
 
   ASSERT_EQ(machine.regs()[0xA], 0x70); // 0x02 - 0x92 = 0x70
@@ -318,7 +320,7 @@ TEST(StateMachineTest, Test8xyE) {
   statemachine machine(instructions_decode(instructions), 0, 0);
 
   for (unsigned i = 0; i < instructions.size(); ++i) {
-    ASSERT_STEP(machine, 0, 0);
+    ASSERT_STEP(machine, 0, false);
   }
 
   ASSERT_EQ(machine.regs()[0x0], 0xE4); // (0x72 << 2) = 0xE4
@@ -329,3 +331,94 @@ TEST(StateMachineTest, Test8xyE) {
   ASSERT_EQ(machine.regs()[0xB], 0x00); // VB should be untouched.
 }
 
+TEST(StateMachineTest, TestAnnn_Fx1E) {
+  std::initializer_list<uint16_t> instructions = {
+      0xAF10, // LD I, 0xF10
+      0x60E0, // LD V0, 0xE0
+      0xF01E, // ADD I, V0
+      0xF01E, // ADD I, V0 (should rollover)
+      0x0000, // Do nothing (allows m_reg_I to get masked)
+  };
+  statemachine machine(instructions_decode(instructions), 0, 0);
+
+  ASSERT_STEP(machine, 0, false);
+  ASSERT_EQ(machine.reg_I(), 0xF10);
+  ASSERT_STEP(machine, 0, false);
+  ASSERT_STEP(machine, 0, false);
+  ASSERT_EQ(machine.reg_I(), 0xFF0);
+  ASSERT_STEP(machine, 0, false);
+  ASSERT_STEP(machine, 0, false);
+  ASSERT_EQ(machine.reg_I(), 0x0D0);
+}
+
+TEST(StateMachineTest, TestFx33) {
+  std::initializer_list<uint16_t> instructions = {
+      0xAF10,        // LD I, 0xF10
+      0x6000 | 123u, // LD V0, 123
+      0xF033,        // LD B, V0
+  };
+  statemachine machine(instructions_decode(instructions), 0, 0);
+
+  ASSERT_STEP(machine, 0, false);
+  ASSERT_STEP(machine, 0, false);
+  ASSERT_STEP(machine, 0, false);
+
+  ASSERT_EQ(machine.memory()[machine.reg_I()], 1);
+  ASSERT_EQ(machine.memory()[machine.reg_I() + 1], 2);
+  ASSERT_EQ(machine.memory()[machine.reg_I() + 2], 3);
+}
+
+TEST(StateMachineTest, TestFx15_Fx18_Timers) {
+  std::initializer_list<uint16_t> instructions = {
+      0x6003, // LD V0, 0x03
+      0x6102, // LD V1, 0x02
+      0xF015, // LD DT, V0
+      0xF118, // LD ST, V1
+      0x0000, // NOOP
+      0x0000, // NOOP
+      0x0000, // NOOP
+      0x0000, // NOOP
+  };
+  statemachine machine(instructions_decode(instructions), 0, 0);
+
+  // Make sure the values are loaded.
+  ASSERT_STEP(machine, 0, false);
+  ASSERT_STEP(machine, 0, false);
+  ASSERT_STEP(machine, 0, false);
+  ASSERT_STEP(machine, 0, false);
+  ASSERT_EQ(machine.reg_DT(), 0x03);
+  ASSERT_EQ(machine.reg_ST(), 0x02);
+
+  // Make sure clock ticks to, but not past, 0.
+  ASSERT_STEP(machine, 0, true);
+  ASSERT_EQ(machine.reg_DT(), 0x02);
+  ASSERT_EQ(machine.reg_ST(), 0x01);
+  ASSERT_STEP(machine, 0, true);
+  ASSERT_EQ(machine.reg_DT(), 0x01);
+  ASSERT_EQ(machine.reg_ST(), 0x00);
+  ASSERT_STEP(machine, 0, true);
+  ASSERT_EQ(machine.reg_DT(), 0x00);
+  ASSERT_EQ(machine.reg_ST(), 0x00);
+}
+
+TEST(StateMachineTest, TestCxkk) {
+  // Fill all the registers with random bytes masked with DB.
+  std::initializer_list<uint16_t> instructions = {
+      0xC0DB, 0xC1DB, 0xC2DB, 0xC3DB, 0xC4DB, 0xC5DB, 0xC6DB, 0xC7DB,
+      0xC8DB, 0xC9DB, 0xCADB, 0xCBDB, 0xCCDB, 0xCDDB, 0xCEDB, 0xCFDB,
+  };
+  statemachine machine(instructions_decode(instructions), 0, 0);
+
+  for (unsigned i = 0; i < instructions.size(); ++i) {
+    ASSERT_STEP(machine, 0, false);
+    // Check mask.
+    ASSERT_EQ(machine.regs()[i] & ~0xDB, 0x00);
+  }
+
+  // Make sure that not all the registers are identical.
+  auto machine_regs = machine.regs();
+  std::array<uint8_t, machine_regs.size()> regs;
+  std::copy(machine_regs.begin(), machine_regs.end(), regs.begin());
+  std::sort(regs.begin(), regs.end());
+  ASSERT_NE(regs.front(), regs.back()) << regs_of(machine) << '\n';
+}

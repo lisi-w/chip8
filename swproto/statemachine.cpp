@@ -14,7 +14,7 @@ statemachine::statemachine(std::array<uint8_t, MEMORY_SIZE> mem, uint16_t pc,
     : m_mem(mem), m_display{0}, m_regs{0}, m_stack{}, m_pc(pc),
       m_font_begin(font_begin), m_reg_I(0), m_reg_DT(0), m_reg_ST(0) {}
 
-statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
+statemachine::status statemachine::step(uint16_t keystate, bool tick) {
 
   if (m_pc & 1) [[unlikely]] {
     return PC_UNALIGNED;
@@ -30,16 +30,16 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
   uint8_t y = (opcode >> 4) & 0xF;
   uint8_t kk = opcode & 0xFF;
 
+  m_reg_I &= 0xFFF;
+
   // Tick tick tick
-  if (m_reg_DT < ticks) {
-    m_reg_DT = 0;
-  } else {
-    m_reg_DT -= ticks;
-  }
-  if (m_reg_ST < ticks) {
-    m_reg_ST = 0;
-  } else {
-    m_reg_ST -= ticks;
+  if (tick) {
+    if (m_reg_DT > 0) {
+      --m_reg_DT;
+    }
+    if (m_reg_ST > 0) {
+      --m_reg_ST;
+    }
   }
 
   // Grab first hexadigit.
@@ -289,7 +289,7 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
     } break;
 
     case 0x55: {
-      auto mem_begin = m_mem.begin() + (m_reg_I & 0xFFF);
+      auto mem_begin = m_mem.begin() + m_reg_I;
       auto n_to_copy = x + 1;
       // Make sure we don't copy past the end.
       if (n_to_copy > (m_mem.cend() - mem_begin)) [[unlikely]] {
@@ -299,7 +299,7 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
     } break;
 
     case 0x65: {
-      auto mem_begin = m_mem.cbegin() + (m_reg_I & 0xFFF);
+      auto mem_begin = m_mem.cbegin() + m_reg_I;
       auto n_to_copy = x + 1;
       // Make sure we don't copy past the end.
       if (n_to_copy > (m_mem.cend() - mem_begin)) [[unlikely]] {
