@@ -10,10 +10,10 @@
 
 class statemachine {
 public:
-  const static int MEMORY_SIZE = 4096;
-  const static int STACK_SIZE = 16;
-  const static int DISPLAY_WIDTH = 64;
-  const static int DISPLAY_HEIGHT = 32;
+  const static unsigned MEMORY_SIZE = 4096;
+  const static unsigned STACK_SIZE = 16;
+  const static unsigned DISPLAY_WIDTH = 64;
+  const static unsigned DISPLAY_HEIGHT = 32;
 
   // Non-negative statuses are those from which the state machine may recover.
   // Negative statuses are those with overflows.
@@ -40,8 +40,8 @@ public:
    */
   status step(uint16_t keystate, uint32_t ticks);
 
-  /// Get current value of special register Ia.
-  inline uint8_t reg_I() const { return m_reg_I; };
+  /// Get current value of special register I.
+  inline uint16_t reg_I() const { return m_reg_I; };
 
   /// Get current value of delay timer register.
   inline uint8_t reg_DT() const { return m_reg_DT; };
