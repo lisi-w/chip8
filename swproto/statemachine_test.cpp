@@ -359,6 +359,24 @@ TEST(StateMachineTest, TestAnnn_Fx1E) {
   ASSERT_EQ(machine.reg_I(), 0x0D0);
 }
 
+TEST(StateMachineTest, TestFx0A) {
+  std::initializer_list<uint16_t> instructions = {
+      0xF00A, // LD V0, K
+      0x0000, // NOOP
+  };
+  statemachine machine(instructions_decode(instructions), 0, 0);
+
+  // Spin a bit, making sure that the PC doesn't progress.
+  for (unsigned i = 0; i < 100; ++i) {
+    ASSERT_STEP(machine, 0, false, statemachine::WAITING_FOR_KEYPRESS);
+    ASSERT_EQ(machine.pc(), 0) << "Machine should not progress.\n";
+  }
+  // Press key 7.
+  ASSERT_STEP(machine, 1u << 7u, false);
+  ASSERT_EQ(machine.pc(), 0x002) << "Machine should progress.\n";
+  ASSERT_EQ(machine.regs()[0], 7);
+}
+
 TEST(StateMachineTest, TestFx29) {
   const uint16_t test_font_begin = 0x123;
   std::initializer_list<uint16_t> instructions = {
