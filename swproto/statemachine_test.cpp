@@ -1,5 +1,6 @@
 #include "statemachine.hpp"
 #include <algorithm>
+#include <functional>
 #include <gtest/gtest.h>
 #include <initializer_list>
 #include <sstream>
@@ -15,6 +16,20 @@ std::string regs_of(const statemachine &mach) {
   }
 
   return reg_summary.str();
+}
+
+std::string mem_of(const statemachine &mach) {
+  using namespace std;
+  stringstream mem_str;
+  mem_str << "mem:";
+  unsigned i = 0;
+  for (uint8_t val : mach.memory()) {
+    if ((i++ % 32) == 0) {
+      mem_str << "\n  ";
+    }
+    mem_str << hex << setw(2) << setfill('0') << (int)val << " ";
+  }
+  return mem_str.str();
 }
 
 inline void
@@ -35,7 +50,7 @@ instructions_decode(const std::initializer_list<uint16_t> instructions) {
 
   assert(instructions.size() <= (statemachine::MEMORY_SIZE / 2));
 
-  std::array<uint8_t, statemachine::MEMORY_SIZE> mem;
+  std::array<uint8_t, statemachine::MEMORY_SIZE> mem{0};
   unsigned i = 0;
   for (uint16_t instruction : instructions) {
     // Necessary to do it this way b/c of endianness correctness.
@@ -171,6 +186,7 @@ TEST(StateMachineTest, Test8xy0) {
       },
       0, 0);
 
+  ASSERT_STEP(machine, 0, false);
   ASSERT_STEP(machine, 0, false);
 
   ASSERT_EQ(machine.regs()[0x0], 0x00); // V0 should never have been set.
@@ -351,6 +367,22 @@ TEST(StateMachineTest, TestAnnn_Fx1E) {
   ASSERT_EQ(machine.reg_I(), 0x0D0);
 }
 
+TEST(StateMachineTest, TestFx29) {
+  const uint16_t test_font_begin = 0x123;
+  std::initializer_list<uint16_t> instructions = {
+      0xF029, // LD F, V0
+      0x6004, // LD V0, 0x4
+      0xF029, // LD F, V0
+  };
+  statemachine machine(instructions_decode(instructions), 0, test_font_begin);
+
+  ASSERT_STEP(machine, 0, false);
+  ASSERT_EQ(machine.reg_I(), test_font_begin);
+  ASSERT_STEP(machine, 0, false);
+  ASSERT_STEP(machine, 0, false);
+  ASSERT_EQ(machine.reg_I(), test_font_begin + (4 * statemachine::FONT_ROWS));
+}
+
 TEST(StateMachineTest, TestFx33) {
   std::initializer_list<uint16_t> instructions = {
       0xAF10,        // LD I, 0xF10
@@ -415,10 +447,86 @@ TEST(StateMachineTest, TestCxkk) {
     ASSERT_EQ(machine.regs()[i] & ~0xDB, 0x00);
   }
 
-  // Make sure that not all the registers are identical.
+  // Make sure that not all the registers are identical by making sure
+  // they don't all match the first value.
   auto machine_regs = machine.regs();
-  std::array<uint8_t, machine_regs.size()> regs;
-  std::copy(machine_regs.begin(), machine_regs.end(), regs.begin());
-  std::sort(regs.begin(), regs.end());
-  ASSERT_NE(regs.front(), regs.back()) << regs_of(machine) << '\n';
+  ASSERT_TRUE(std::any_of(machine_regs.begin(), machine_regs.end(),
+                          [&](auto x) { return x != machine_regs.front(); }));
+}
+
+TEST(StateMachineTest, TestFx55) {
+  std::initializer_list<uint16_t> instructions = {
+      // Fill all the registers with random bytes masked with DB.
+      0xC0DB, 0xC1DB, 0xC2DB, 0xC3DB, 0xC4DB, 0xC5DB, 0xC6DB, 0xC7DB,
+      0xC8DB, 0xC9DB, 0xCADB, 0xCBDB, 0xCCDB, 0xCDDB, 0xCEDB, 0xCFDB,
+      0xAE00, // LD I, 0xE00
+      0xF755, // LD [I], V7
+      0xAF00, // LD I, 0xF00
+      0xFF55, // LD [I], VF
+  };
+  statemachine machine(instructions_decode(instructions), 0, 0);
+
+  for (unsigned i = 0; i < instructions.size(); ++i) {
+    ASSERT_STEP(machine, 0, false);
+  }
+
+  auto is_zero = [](uint8_t x) { return x == 0; };
+  auto machine_regs = machine.regs();
+  auto machine_mem = machine.memory();
+
+  auto mem_instructions_end = machine_mem.begin() + instructions.size() * 2;
+  auto mem_V0_V7_begin = machine_mem.begin() + 0xE00;
+  auto mem_V0_V7_end = machine_mem.begin() + (0xE07 + 1);
+  auto mem_V0_VF_begin = machine_mem.begin() + 0xF00;
+  auto mem_V0_VF_end = machine_mem.begin() + (0xF0F + 1);
+
+  // Make sure that everything between the end of the instructions
+  // and 0xDFF (inclusive) is 0.
+  ASSERT_TRUE(std::all_of(mem_instructions_end, mem_V0_V7_begin, is_zero))
+      << mem_of(machine);
+  // Make sure that V0..V7 matches 0xE00..0xE07.
+  ASSERT_TRUE(equal(mem_V0_V7_begin, mem_V0_V7_end, machine_regs.begin()))
+      << mem_of(machine);
+  // Make sure that 0xE08..0xDFF is empty.
+  ASSERT_TRUE(std::all_of(mem_V0_V7_end, mem_V0_VF_begin, is_zero))
+      << mem_of(machine);
+  // Make sure that V0..VF matches 0xF00..0xF10.
+  ASSERT_TRUE(equal(mem_V0_VF_begin, mem_V0_VF_end, machine_regs.begin()))
+      << mem_of(machine);
+  // Make sure that 0xF10..0xFFF is empty.
+  ASSERT_TRUE(std::all_of(mem_V0_VF_end, machine_mem.end(), is_zero))
+      << mem_of(machine);
+}
+
+TEST(StateMachineTest, TestFx65) {
+  std::initializer_list<uint16_t> instructions = {
+      // Nonsense will begin 4 instructions from now.
+      0xA006, // LD I, 0x006
+      0xF765, // LD V7, [I]
+      0xFF65, // LD VF, [I]
+      // Fill 16 bytes with nonsense.
+      0xDEAD, 0xBEEF, 0x000F, 0xF1CE, 0xC0DE, 0xFACE, 0xFEED, 0xF00D};
+
+  statemachine machine(instructions_decode(instructions), 0, 0);
+
+  auto is_zero = [](uint8_t x) { return x == 0; };
+  auto machine_regs = machine.regs();
+  auto machine_mem = machine.memory();
+  auto reg_V8_begin = machine_regs.begin() + 8;
+  auto nonsense_begin = machine_mem.begin() + 0x006;
+
+  ASSERT_STEP(machine, 0, false); // Executes LD V7, [0x006]
+  ASSERT_STEP(machine, 0, false); // Executes LD V7, [0x006]
+
+  // Make sure V0..V7 contains the first 8 bytes of nonsense.
+  ASSERT_TRUE(equal(machine_regs.begin(), reg_V8_begin, nonsense_begin))
+      << regs_of(machine);
+  // Make sure V8..VF is still zero's.
+  ASSERT_TRUE(std::all_of(reg_V8_begin, machine_regs.end(), is_zero))
+      << regs_of(machine);
+
+  ASSERT_STEP(machine, 0, false); // Executes LD VF, [0x006]
+  // Now make sure the regs are completely filled up with nonsense.
+  ASSERT_TRUE(equal(machine_regs.begin(), machine_regs.end(), nonsense_begin))
+      << regs_of(machine);
 }

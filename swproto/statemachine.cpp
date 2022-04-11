@@ -12,7 +12,7 @@ static std::mutex random_mutex;
 statemachine::statemachine(std::array<uint8_t, MEMORY_SIZE> mem, uint16_t pc,
                            uint16_t font_begin)
     : m_mem(mem), m_display{0}, m_regs{0}, m_stack{}, m_pc(pc),
-      m_font_begin(font_begin), m_reg_I(0), m_reg_DT(0), m_reg_ST(0) {}
+      m_font_begin(font_begin & 0xFFF), m_reg_I(0), m_reg_DT(0), m_reg_ST(0) {}
 
 statemachine::status statemachine::step(uint16_t keystate, bool tick) {
 
@@ -273,29 +273,22 @@ statemachine::status statemachine::step(uint16_t keystate, bool tick) {
     } break;
 
     case 0x29: {
-      m_reg_I = m_font_begin * (m_regs.at(x) * 5);
+      m_reg_I = m_font_begin + (m_regs.at(x) * FONT_ROWS);
     } break;
 
     case 0x33: {
-      if ((m_reg_I + 2u) > MEMORY_SIZE) {
-        return MEMORY_OVERFLOW;
-      }
       auto vx = m_regs.at(x);
-      m_mem[m_reg_I + 2] = vx % 10;
+      m_mem[(m_reg_I + 2) & 0xFFF] = vx % 10;
       vx /= 10;
-      m_mem[m_reg_I + 1] = vx % 10;
+      m_mem[(m_reg_I + 1) & 0xFFF] = vx % 10;
       vx /= 10;
-      m_mem[m_reg_I] = vx % 10;
+      m_mem[m_reg_I & 0xFFF] = vx % 10;
     } break;
 
     case 0x55: {
-      auto mem_begin = m_mem.begin() + m_reg_I;
-      auto n_to_copy = x + 1;
-      // Make sure we don't copy past the end.
-      if (n_to_copy > (m_mem.cend() - mem_begin)) [[unlikely]] {
-        return MEMORY_OVERFLOW;
+      for (unsigned i = 0; i <= x; ++i) {
+        m_mem[(m_reg_I + i) & 0xFFF] = m_regs.at(i);
       }
-      std::copy(m_regs.cbegin(), m_regs.cbegin() + n_to_copy, mem_begin);
     } break;
 
     case 0x65: {
