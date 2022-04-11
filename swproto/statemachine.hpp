@@ -14,6 +14,7 @@ public:
   const static unsigned STACK_SIZE = 16;
   const static unsigned DISPLAY_WIDTH = 64;
   const static unsigned DISPLAY_HEIGHT = 32;
+  const static unsigned FONT_ROWS = 5;
 
   // Non-negative statuses are those from which the state machine may recover.
   // Negative statuses are those with overflows.
