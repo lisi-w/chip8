@@ -109,63 +109,57 @@ TEST(StateMachineTest, Test1nnn) {
 }
 
 TEST(StateMachineTest, Test3xkk_4xkk) {
-  statemachine machine(
-      {
-          0x30, 0x00, // SE V0 == 0 (Should skip)
-          0x61, 0x55, // LD V1, 0x55
-          0x30, 0x01, // SE V0 == 1 (Should not skip)
-          0x62, 0x55, // LD V2, 0x55
-          0x40, 0x01, // SNE V0 == 1 (Should skip)
-          0x63, 0x55, // LD V3, 0x55
-          0x40, 0x00, // SNE V0 == 0 (Should not skip)
-          0x64, 0x55, // LD V4, 0x55
-      },
-      0, 0);
+  std::initializer_list<uint16_t> instructions = {
+      0x3000, // SE V0 == 0 (Should skip)
+      0x6155, // LD V1, 0x55
+      0x3001, // SE V0 == 1 (Should not skip)
+      0x6255, // LD V2, 0x55
+      0x4001, // SNE V0 == 1 (Should skip)
+      0x6355, // LD V3, 0x55
+      0x4000, // SNE V0 == 0 (Should not skip)
+      0x6455, // LD V4, 0x55
+  };
 
-  // 6 instruction should execute.
-  for (int i = 0; i < 6; ++i) {
+  statemachine machine(instructions_decode(instructions), 0, 0);
+
+  for (unsigned i = 0; i < 6 /* 2 of 8 instructions should be skipped */; ++i) {
     ASSERT_STEP(machine, 0, false);
   }
 
-  // PC should sit right after the last LD.
-  ASSERT_EQ(machine.pc(), 0x010);
+  ASSERT_EQ(machine.pc(), instructions.size() * 2)
+      << "PC should sit after the final instruction.";
 
-  // V0 should not have changed from 0
-  ASSERT_EQ(machine.regs()[0x0], 0);
-  // V1 should not have changed from 0
-  ASSERT_EQ(machine.regs()[0x1], 0);
-  // V2 should indeed have changed from 0
-  ASSERT_EQ(machine.regs()[0x2], 0x55);
-  // V1 should not have changed from 0
-  ASSERT_EQ(machine.regs()[0x3], 0);
-  // V2 should indeed have changed from 0
-  ASSERT_EQ(machine.regs()[0x4], 0x55);
+  ASSERT_EQ(machine.regs()[0x0], 0) << "V0 should not have changed from 0\n";
+  ASSERT_EQ(machine.regs()[0x1], 0) << "V1 should not have changed from 0\n";
+  ASSERT_EQ(machine.regs()[0x2], 0x55) << "V2 should have changed from 0\n";
+  ASSERT_EQ(machine.regs()[0x3], 0) << "V1 should not have changed from 0\n";
+  ASSERT_EQ(machine.regs()[0x4], 0x55) << "V2 should have changed from 0\n";
 }
 
 TEST(StateMachineTest, Test5xy0_9xy0) {
-  statemachine machine(
-      {
-          0x61, 0x01, // LD V1, 0x01
+  std::initializer_list<uint16_t> instructions = {
+      0x6101, // LD V1, 0x01
 
-          0x51, 0x10, // SE V1, V1 (should skip)
-          0x6A, 0x55, // LD VA, 0x55
-          0x50, 0x20, // SE V0, V2 (should skip)
-          0x6A, 0x55, // LD VA, 0x55
-          0x90, 0x10, // SNE V0, V1 (should skip)
-          0x6A, 0x55, // LD VA, 0x55
+      0x5110, // SE V1, V1 (should skip)
+      0x6A55, // LD VA, 0x55
+      0x5020, // SE V0, V2 (should skip)
+      0x6A55, // LD VA, 0x55
+      0x9010, // SNE V0, V1 (should skip)
+      0x6A55, // LD VA, 0x55
 
-          0x91, 0x10, // SNE V1, V1 (should not skip)
-          0x6B, 0x55, // LD VB, 0x55
-          0x90, 0x20, // SNE V0, V2 (should not skip)
-          0x6C, 0x55, // LD VC, 0x55
-          0x50, 0x10, // SE V0, V1 (should not skip)
-          0x6D, 0x55, // LD VD, 0x55
-      },
-      0, 0);
+      0x9110, // SNE V1, V1 (should not skip)
+      0x6B55, // LD VB, 0x55
+      0x9020, // SNE V0, V2 (should not skip)
+      0x6C55, // LD VC, 0x55
+      0x5010, // SE V0, V1 (should not skip)
+      0x6D55, // LD VD, 0x55
+  };
+
+  statemachine machine(instructions_decode(instructions), 0, 0);
 
   // Run until complete
-  int i;
-  for (i = 0; (i <= 20) && (machine.memory()[machine.pc()] != 0); ++i) {
+  unsigned i;
+  for (i = 0; (i < 20) && (machine.memory()[machine.pc()] != 0); ++i) {
     ASSERT_STEP(machine, 0, false);
   }
 
@@ -179,12 +173,11 @@ TEST(StateMachineTest, Test5xy0_9xy0) {
 }
 
 TEST(StateMachineTest, Test8xy0) {
-  statemachine machine(
-      {
-          0x61, 0x44, // LD V1, 0x44
-          0x83, 0x10, // LD V3, V1
-      },
-      0, 0);
+  std::initializer_list<uint16_t> instructions = {
+      0x6144, // LD V1, 0x44
+      0x8310, // LD V3, V1
+  };
+  statemachine machine(instructions_decode(instructions), 0, 0);
 
   ASSERT_STEP(machine, 0, false);
   ASSERT_STEP(machine, 0, false);
@@ -200,29 +193,28 @@ TEST(StateMachineTest, Test8xy0) {
 }
 
 TEST(StateMachineTest, Test8xy1_7xy2_8xy3) {
-  statemachine machine(
-      {
-          0x61, 0x05, // LD V1, 0x05
-          0x62, 0xA0, // LD V2, 0xA0
+  std::initializer_list<uint16_t> instructions = {
+      0x6105, // LD V1, 0x05
+      0x62A0, // LD V2, 0xA0
 
-          0x6A, 0x55, // LD VA, 0x55
-          0x6B, 0x55, // LD VB, 0x55
-          0x6C, 0x55, // LD VC, 0x55
-          0x6D, 0x55, // LD VD, 0x55
-          0x6E, 0x55, // LD VE, 0x55
-          0x6F, 0x55, // LD VF, 0x55
+      0x6A55, // LD VA, 0x55
+      0x6B55, // LD VB, 0x55
+      0x6C55, // LD VC, 0x55
+      0x6D55, // LD VD, 0x55
+      0x6E55, // LD VE, 0x55
+      0x6F55, // LD VF, 0x55
 
-          0x8A, 0x11, // OR VA, V1
-          0x8B, 0x21, // OR VB, V2
-          0x8C, 0x12, // AND VC, V1
-          0x8D, 0x22, // AND VD, V2
-          0x8E, 0x13, // XOR VE, V1
-          0x8F, 0x23, // XOR VF, V2
-      },
-      0, 0);
+      0x8A11, // OR VA, V1
+      0x8B21, // OR VB, V2
+      0x8C12, // AND VC, V1
+      0x8D22, // AND VD, V2
+      0x8E13, // XOR VE, V1
+      0x8F23, // XOR VF, V2
+  };
 
-  // Execute all 14 instructions.
-  for (int i = 0; i < 14; ++i) {
+  statemachine machine(instructions_decode(instructions), 0, 0);
+
+  for (unsigned i = 0; i < instructions.size(); ++i) {
     ASSERT_STEP(machine, 0, false);
   }
 
@@ -383,33 +375,14 @@ TEST(StateMachineTest, TestFx29) {
   ASSERT_EQ(machine.reg_I(), test_font_begin + (4 * statemachine::FONT_ROWS));
 }
 
-TEST(StateMachineTest, TestFx33) {
-  std::initializer_list<uint16_t> instructions = {
-      0xAF10,        // LD I, 0xF10
-      0x6000 | 123u, // LD V0, 123
-      0xF033,        // LD B, V0
-  };
-  statemachine machine(instructions_decode(instructions), 0, 0);
-
-  ASSERT_STEP(machine, 0, false);
-  ASSERT_STEP(machine, 0, false);
-  ASSERT_STEP(machine, 0, false);
-
-  ASSERT_EQ(machine.memory()[machine.reg_I()], 1);
-  ASSERT_EQ(machine.memory()[machine.reg_I() + 1], 2);
-  ASSERT_EQ(machine.memory()[machine.reg_I() + 2], 3);
-}
-
 TEST(StateMachineTest, TestFx15_Fx18_Timers) {
   std::initializer_list<uint16_t> instructions = {
       0x6003, // LD V0, 0x03
       0x6102, // LD V1, 0x02
       0xF015, // LD DT, V0
       0xF118, // LD ST, V1
-      0x0000, // NOOP
-      0x0000, // NOOP
-      0x0000, // NOOP
-      0x0000, // NOOP
+
+      0x0000, 0x0000, 0x0000, 0x0000 /* NO-OPs */
   };
   statemachine machine(instructions_decode(instructions), 0, 0);
 
@@ -433,25 +406,21 @@ TEST(StateMachineTest, TestFx15_Fx18_Timers) {
   ASSERT_EQ(machine.reg_ST(), 0x00);
 }
 
-TEST(StateMachineTest, TestCxkk) {
-  // Fill all the registers with random bytes masked with DB.
+TEST(StateMachineTest, TestFx33) {
   std::initializer_list<uint16_t> instructions = {
-      0xC0DB, 0xC1DB, 0xC2DB, 0xC3DB, 0xC4DB, 0xC5DB, 0xC6DB, 0xC7DB,
-      0xC8DB, 0xC9DB, 0xCADB, 0xCBDB, 0xCCDB, 0xCDDB, 0xCEDB, 0xCFDB,
+      0xAF10,        // LD I, 0xF10
+      0x6000 | 123u, // LD V0, 123
+      0xF033,        // LD B, V0
   };
   statemachine machine(instructions_decode(instructions), 0, 0);
 
-  for (unsigned i = 0; i < instructions.size(); ++i) {
-    ASSERT_STEP(machine, 0, false);
-    // Check mask.
-    ASSERT_EQ(machine.regs()[i] & ~0xDB, 0x00);
-  }
+  ASSERT_STEP(machine, 0, false);
+  ASSERT_STEP(machine, 0, false);
+  ASSERT_STEP(machine, 0, false);
 
-  // Make sure that not all the registers are identical by making sure
-  // they don't all match the first value.
-  auto machine_regs = machine.regs();
-  ASSERT_TRUE(std::any_of(machine_regs.begin(), machine_regs.end(),
-                          [&](auto x) { return x != machine_regs.front(); }));
+  ASSERT_EQ(machine.memory()[machine.reg_I()], 1);
+  ASSERT_EQ(machine.memory()[machine.reg_I() + 1], 2);
+  ASSERT_EQ(machine.memory()[machine.reg_I() + 2], 3);
 }
 
 TEST(StateMachineTest, TestFx55) {
@@ -529,4 +498,25 @@ TEST(StateMachineTest, TestFx65) {
   // Now make sure the regs are completely filled up with nonsense.
   ASSERT_TRUE(equal(machine_regs.begin(), machine_regs.end(), nonsense_begin))
       << regs_of(machine);
+}
+
+TEST(StateMachineTest, TestCxkk) {
+  // Fill all the registers with random bytes masked with DB.
+  std::initializer_list<uint16_t> instructions = {
+      0xC0DB, 0xC1DB, 0xC2DB, 0xC3DB, 0xC4DB, 0xC5DB, 0xC6DB, 0xC7DB,
+      0xC8DB, 0xC9DB, 0xCADB, 0xCBDB, 0xCCDB, 0xCDDB, 0xCEDB, 0xCFDB,
+  };
+  statemachine machine(instructions_decode(instructions), 0, 0);
+
+  for (unsigned i = 0; i < instructions.size(); ++i) {
+    ASSERT_STEP(machine, 0, false);
+    // Check mask.
+    ASSERT_EQ(machine.regs()[i] & ~0xDB, 0x00);
+  }
+
+  // Make sure that not all the registers are identical by making sure
+  // they don't all match the first value.
+  auto machine_regs = machine.regs();
+  ASSERT_TRUE(std::any_of(machine_regs.begin(), machine_regs.end(),
+                          [&](auto x) { return x != machine_regs.front(); }));
 }

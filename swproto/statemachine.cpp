@@ -292,13 +292,9 @@ statemachine::status statemachine::step(uint16_t keystate, bool tick) {
     } break;
 
     case 0x65: {
-      auto mem_begin = m_mem.cbegin() + m_reg_I;
-      auto n_to_copy = x + 1;
-      // Make sure we don't copy past the end.
-      if (n_to_copy > (m_mem.cend() - mem_begin)) [[unlikely]] {
-        return MEMORY_OVERFLOW;
+      for (unsigned i = 0; i <= x; ++i) {
+        m_regs[i] = m_mem.at((m_reg_I + i) & 0xFFF);
       }
-      std::copy(mem_begin, mem_begin + n_to_copy, m_regs.begin());
     } break;
     default:
       return NOT_IMPLEMENTED;
