@@ -127,13 +127,13 @@ TEST(StateMachineTest, Test3xkk_4xkk) {
   }
 
   ASSERT_EQ(machine.pc(), instructions.size() * 2)
-      << "PC should sit after the final instruction.";
+      << "PC should sit after the final instruction";
 
-  ASSERT_EQ(machine.regs()[0x0], 0) << "V0 should not have changed from 0\n";
-  ASSERT_EQ(machine.regs()[0x1], 0) << "V1 should not have changed from 0\n";
-  ASSERT_EQ(machine.regs()[0x2], 0x55) << "V2 should have changed from 0\n";
-  ASSERT_EQ(machine.regs()[0x3], 0) << "V1 should not have changed from 0\n";
-  ASSERT_EQ(machine.regs()[0x4], 0x55) << "V2 should have changed from 0\n";
+  ASSERT_EQ(machine.regs()[0x0], 0) << "V0 should not have changed from 0";
+  ASSERT_EQ(machine.regs()[0x1], 0) << "V1 should not have changed from 0";
+  ASSERT_EQ(machine.regs()[0x2], 0x55) << "V2 should have changed from 0";
+  ASSERT_EQ(machine.regs()[0x3], 0) << "V1 should not have changed from 0";
+  ASSERT_EQ(machine.regs()[0x4], 0x55) << "V2 should have changed from 0";
 }
 
 TEST(StateMachineTest, Test5xy0_9xy0) {
@@ -339,6 +339,74 @@ TEST(StateMachineTest, Test8xyE) {
   ASSERT_EQ(machine.regs()[0xB], 0x00); // VB should be untouched.
 }
 
+TEST(StateMachineTest, TestEx9E) {
+  std::initializer_list<uint16_t> instructions = {
+      0x6209, // LD V2, 0x09
+      0xE29E, // SKP V0
+      0x60FF, // LD V0, 0xFF
+      0x0000, // NOOP
+  };
+
+  { // Should skip b/c exact match.
+    statemachine machine(instructions_decode(instructions), 0, 0);
+    ASSERT_STEP(machine, 0, false);
+    ASSERT_STEP(machine, 1u << 9u, false);
+    ASSERT_STEP(machine, 0, false);
+    ASSERT_EQ(machine.regs()[0], 0x00);
+  }
+
+  { // Should not skip because does not match.
+    statemachine machine(instructions_decode(instructions), 0, 0);
+    ASSERT_STEP(machine, 0, false);
+    ASSERT_STEP(machine, 1u << 2u, false);
+    ASSERT_STEP(machine, 0, false);
+    ASSERT_EQ(machine.regs()[0], 0xFF);
+  }
+  { // Should not skip because impossible request.
+    auto mem = instructions_decode(instructions);
+    mem[1] = 0x77; // There is no 0x77 key.
+    statemachine machine(mem, 0, 0);
+    ASSERT_STEP(machine, 0, false);
+    ASSERT_STEP(machine, 0xFFFF, false);
+    ASSERT_STEP(machine, 0, false);
+    ASSERT_EQ(machine.regs()[0], 0xFF);
+  }
+}
+
+TEST(StateMachineTest, TestExA1) {
+  std::initializer_list<uint16_t> instructions = {
+      0x6209, // LD V2, 0x09
+      0xE2A1, // SKNP V0
+      0x60FF, // LD V0, 0xFF
+      0x0000, // NOOP
+  };
+
+  { // Should not skip b/c exact match.
+    statemachine machine(instructions_decode(instructions), 0, 0);
+    ASSERT_STEP(machine, 0, false);
+    ASSERT_STEP(machine, 1u << 9u, false);
+    ASSERT_STEP(machine, 0, false);
+    ASSERT_EQ(machine.regs()[0], 0xFF);
+  }
+
+  { // Should skip because does not match.
+    statemachine machine(instructions_decode(instructions), 0, 0);
+    ASSERT_STEP(machine, 0, false);
+    ASSERT_STEP(machine, 1u << 2u, false);
+    ASSERT_STEP(machine, 0, false);
+    ASSERT_EQ(machine.regs()[0], 0x00);
+  }
+  { // Should skip because impossible request.
+    auto mem = instructions_decode(instructions);
+    mem[1] = 0x77; // There is no 0x77 key.
+    statemachine machine(mem, 0, 0);
+    ASSERT_STEP(machine, 0, false);
+    ASSERT_STEP(machine, 0xFFFF, false);
+    ASSERT_STEP(machine, 0, false);
+    ASSERT_EQ(machine.regs()[0], 0x00);
+  }
+}
+
 TEST(StateMachineTest, TestAnnn_Fx1E) {
   std::initializer_list<uint16_t> instructions = {
       0xAF10, // LD I, 0xF10
@@ -369,11 +437,11 @@ TEST(StateMachineTest, TestFx0A) {
   // Spin a bit, making sure that the PC doesn't progress.
   for (unsigned i = 0; i < 100; ++i) {
     ASSERT_STEP(machine, 0, false, statemachine::WAITING_FOR_KEYPRESS);
-    ASSERT_EQ(machine.pc(), 0) << "Machine should not progress.\n";
+    ASSERT_EQ(machine.pc(), 0) << "Machine should not progress.";
   }
   // Press key 7.
   ASSERT_STEP(machine, 1u << 7u, false);
-  ASSERT_EQ(machine.pc(), 0x002) << "Machine should progress.\n";
+  ASSERT_EQ(machine.pc(), 0x02) << "Machine should progress.";
   ASSERT_EQ(machine.regs()[0], 7);
 }
 
