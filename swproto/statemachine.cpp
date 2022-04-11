@@ -250,12 +250,15 @@ statemachine::status statemachine::step(uint16_t keystate, bool tick) {
     } break;
 
     case 0x0A: {
-      auto vx = m_regs.at(x);
-      if (vx > 15) {
-        return IMPOSSIBLE_KEYPRESS_REQUEST;
-      } else if (!((keystate >> vx) & 1)) {
+      if (keystate) {
+        for (unsigned i = 0, mask = 1; i < 16; ++i, mask <<= 1) {
+          if (mask & keystate) {
+            m_regs[x] = i;
+            break;
+          }
+        }
+      } else {
         // Returning early means that PC isn't incremented
-        // so the next step() call comes back here.
         return WAITING_FOR_KEYPRESS;
       }
     } break;
