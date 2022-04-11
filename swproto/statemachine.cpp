@@ -42,9 +42,6 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
     m_reg_ST -= ticks;
   }
 
-  // debugging code for safe keeping.
-  std::cerr << "Executing opcode 0x" << std::hex << std::setfill('0')
-            << std::setw(4) << opcode << '\n';
   // Grab first hexadigit.
   switch (opcode >> 12) {
   case 0x0: {
@@ -131,7 +128,7 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
       uint16_t sum = static_cast<uint16_t>(m_regs.at(x)) +
                      static_cast<uint16_t>(m_regs.at(y));
       m_regs[x] = sum;
-      m_regs[0xF] = sum >> 8;
+      m_regs[0xF] = (sum > 0xFF) ? 1 : 0;
     } break;
 
     case 0x5: {
