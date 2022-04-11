@@ -21,5 +21,5 @@ else()
 endif()
 
 
-add_subdirectory (swimp)
+add_subdirectory (swproto)
 
