@@ -28,13 +28,14 @@ ASSERT_STEP(statemachine &mach, uint16_t keystate, uint32_t ticks,
 }
 
 inline std::array<uint8_t, statemachine::MEMORY_SIZE>
-instruction_decode(const std::initializer_list<uint16_t> instructions) {
+instructions_decode(const std::initializer_list<uint16_t> instructions) {
 
   assert(instructions.size() <= (statemachine::MEMORY_SIZE / 2));
 
   std::array<uint8_t, statemachine::MEMORY_SIZE> mem;
   unsigned i = 0;
   for (uint16_t instruction : instructions) {
+    // Necessary to do it this way b/c of endianness correctness.
     mem[i++] = instruction >> 8;
     mem[i++] = instruction & 0xFF;
   }
@@ -217,7 +218,7 @@ TEST(StateMachineTest, Test8xy1_7xy2_8xy3) {
 }
 
 TEST(StateMachineTest, Test8xy4) {
-  statemachine machine(instruction_decode({
+  statemachine machine(instructions_decode({
                            0x6082, // LD V0, 0x82
                            0x6102, // LD V1, 0x02
                            0x8104, // ADD V1, V0
@@ -237,8 +238,8 @@ TEST(StateMachineTest, Test8xy4) {
 }
 
 TEST(StateMachineTest, Test8xy5) {
-  statemachine machine(instruction_decode({
-                           0x6082, // LD V0, 0x82
+  statemachine machine(instructions_decode({
+                           0x6092, // LD V0, 0x92
                            0x6102, // LD V1, 0x02
                            0x8015, // SUB V0, V1 (V0 = V0 - V1)
                            0x8A00, // LD VA, V0 (save for later)
@@ -253,31 +254,78 @@ TEST(StateMachineTest, Test8xy5) {
     ASSERT_STEP(machine, 0, 0);
   }
 
-  ASSERT_EQ(machine.regs()[0xA], 0x80); // 0x82 - 0x02 = 0x80
-  ASSERT_EQ(machine.regs()[0xB], 0x01); // 0x82 - 0x02 does not borrow.
-  ASSERT_EQ(machine.regs()[0x1], 0x70); // 0x02 - 0x92 = -0x70
+  ASSERT_EQ(machine.regs()[0xA], 0x90); // 0x92 - 0x02 = 0x90
+  ASSERT_EQ(machine.regs()[0xB], 0x01); // 0x92 - 0x02 does not borrow.
+  ASSERT_EQ(machine.regs()[0x1], 0x70); // 0x02 - 0x92 = 0x70
   ASSERT_EQ(machine.regs()[0xF], 0x00); // 0x02 - 0x92 DOES borrow.
 }
 
 TEST(StateMachineTest, Test8xy6) {
-  statemachine machine(instruction_decode({
-                           0x6082, // LD V0, 0x82
-                           0x6102, // LD V1, 0x02
-                           0x8015, // SUB V0, V1 (V0 = V0 - V1)
-                           0x8A00, // LD VA, V0 (save for later)
-                           0x8BF0, // LD VB, VF (save for later)
-                           0x6092, // LD V0, 0x92
-                           0x6102, // LD V1, 0x02
-                           0x8105, // SUB V1, V0 (V1 = V1 - V0)
-                       }),
-                       0, 0);
+  // Choose 0x92 and 0x93 to make sure we're using logical right shifts.
+  std::initializer_list<uint16_t> instructions = {
+      0x6092, // LD V0, 0x92
+      0x80A6, // SHR V0, VA (VA should be untouched)
+      0x8AF0, // LD V1, VF (save for later)
+      0x6293, // LD V2, 0x93
+      0x82B6, // SHR V2, VB (VB should be untouched)
+  };
+  statemachine machine(instructions_decode(instructions), 0, 0);
 
-  for (int i = 0; i < 8; ++i) {
+  for (unsigned i = 0; i < instructions.size(); ++i) {
     ASSERT_STEP(machine, 0, 0);
   }
 
-  ASSERT_EQ(machine.regs()[0xA], 0x80); // 0x82 - 0x02 = 0x80
-  ASSERT_EQ(machine.regs()[0xB], 0x01); // 0x82 - 0x02 does not borrow.
-  ASSERT_EQ(machine.regs()[0x1], 0x70); // 0x02 - 0x92 = -0x70
-  ASSERT_EQ(machine.regs()[0xF], 0x00); // 0x02 - 0x92 DOES borrow.
+  ASSERT_EQ(machine.regs()[0x0], 0x49); // (0x92 >> 2) = 0x49
+  ASSERT_EQ(machine.regs()[0x1], 0x00); // Check VF
+  ASSERT_EQ(machine.regs()[0xA], 0x00); // VA should be untouched.
+  ASSERT_EQ(machine.regs()[0x2], 0x49); // (0x93 >> 2) = 0x49
+  ASSERT_EQ(machine.regs()[0xF], 0x01); // Check VF
+  ASSERT_EQ(machine.regs()[0xB], 0x00); // VB should be untouched.
 }
+
+// Nearly identical to test for 8xy5
+TEST(StateMachineTest, Test8xy7) {
+  std::initializer_list<uint16_t> instructions = {
+      0x6092, // LD V0, 0x92
+      0x6102, // LD V1, 0x02
+      0x8017, // SUBN V0, V1 (V0 = V1 - V0)
+      0x8A00, // LD VA, V0 (save for later)
+      0x8BF0, // LD VB, VF (save for later)
+      0x6092, // LD V0, 0x92
+      0x6102, // LD V1, 0x02
+      0x8107, // SUBN V1, V0 (V1 = V0 - V1)
+  };
+  statemachine machine(instructions_decode(instructions), 0, 0);
+
+  for (unsigned i = 0; i < instructions.size(); ++i) {
+    ASSERT_STEP(machine, 0, 0);
+  }
+
+  ASSERT_EQ(machine.regs()[0xA], 0x70); // 0x02 - 0x92 = 0x70
+  ASSERT_EQ(machine.regs()[0xB], 0x00); // 0x02 - 0x92 DOES borrow.
+  ASSERT_EQ(machine.regs()[0x1], 0x90); // 0x92 - 0x02 = 0x90
+  ASSERT_EQ(machine.regs()[0xF], 0x01); // 0x92 - 0x02 DOES NOT borrow.
+}
+
+TEST(StateMachineTest, Test8xyE) {
+  std::initializer_list<uint16_t> instructions = {
+      0x6072, // LD V0, 0x72
+      0x80AE, // SHL V0, VA (VA should be untouched)
+      0x8AF0, // LD V1, VF (save for later)
+      0x62F2, // LD V2, 0xF2
+      0x82BE, // SHL V2, VB (VB should be untouched)
+  };
+  statemachine machine(instructions_decode(instructions), 0, 0);
+
+  for (unsigned i = 0; i < instructions.size(); ++i) {
+    ASSERT_STEP(machine, 0, 0);
+  }
+
+  ASSERT_EQ(machine.regs()[0x0], 0xE4); // (0x72 << 2) = 0xE4
+  ASSERT_EQ(machine.regs()[0x1], 0x00); // Check VF
+  ASSERT_EQ(machine.regs()[0xA], 0x00); // VA should be untouched.
+  ASSERT_EQ(machine.regs()[0x2], 0xE4); // (0xF2 << 2) = 0xE4
+  ASSERT_EQ(machine.regs()[0xF], 0x01); // Check VF
+  ASSERT_EQ(machine.regs()[0xB], 0x00); // VB should be untouched.
+}
+

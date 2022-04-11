@@ -277,7 +277,7 @@ statemachine::status statemachine::step(uint16_t keystate, uint32_t ticks) {
     } break;
 
     case 0x33: {
-      if (m_reg_I + 2 > MEMORY_SIZE) {
+      if ((m_reg_I + 2u) > MEMORY_SIZE) {
         return MEMORY_OVERFLOW;
       }
       auto vx = m_regs.at(x);
