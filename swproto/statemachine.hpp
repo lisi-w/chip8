@@ -68,6 +68,11 @@ public:
     return m_stack.const_view();
   };
 
+  inline uint16_t curr_instruction() const {
+    return (static_cast<uint16_t>(m_mem[m_pc]) << 8) |
+           static_cast<uint16_t>(m_mem[m_pc + 1]);
+  }
+
 private:
   class instruction_stack : public std::stack<uint16_t, std::vector<uint16_t>> {
   public:
