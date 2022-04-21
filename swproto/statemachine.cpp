@@ -1,4 +1,5 @@
 #include "statemachine.hpp"
+#include <cassert>
 #include <cstddef>
 #include <iomanip>
 #include <iostream> // TODO: REMOVE
@@ -9,10 +10,35 @@
 static std::mt19937 random_generator;
 static std::mutex random_mutex;
 
-statemachine::statemachine(std::array<uint8_t, MEMORY_SIZE> mem, uint16_t pc,
-                           uint16_t font_begin)
-    : m_mem(mem), m_display{0}, m_regs{0}, m_stack{}, m_pc(pc),
-      m_font_begin(font_begin & 0xFFF), m_reg_I(0), m_reg_DT(0), m_reg_ST(0) {}
+inline static std::array<uint8_t, statemachine::MEMORY_SIZE>
+instructions_decode(const std::initializer_list<uint16_t> instructions) {
+
+  assert(instructions.size() <= (statemachine::MEMORY_SIZE / 2));
+
+  std::array<uint8_t, statemachine::MEMORY_SIZE> mem{0};
+  unsigned i = 0;
+  for (uint16_t instruction : instructions) {
+    // Necessary to do it this way b/c of endianness correctness.
+    mem[i++] = instruction >> 8;
+    mem[i++] = instruction & 0xFF;
+  }
+
+  return mem;
+}
+
+statemachine::statemachine(std::array<uint8_t, MEMORY_SIZE> mem,
+                           statemachine::init_conf conf)
+    : m_mem(mem), m_display{0}, m_regs{0}, m_stack{}, m_pc(conf.pc),
+      m_font_begin(conf.font_begin & 0xFFF), m_reg_I(0), m_reg_DT(0),
+      m_reg_ST(0), m_quirk_shift(conf.quirk_shift),
+      m_quirk_load_store(conf.quirk_load_store) {}
+
+statemachine::statemachine(std::initializer_list<uint16_t> instructions,
+                           statemachine::init_conf conf)
+    : m_mem(instructions_decode(instructions)), m_display{0}, m_regs{0},
+      m_stack{}, m_pc(conf.pc), m_font_begin(conf.font_begin & 0xFFF),
+      m_reg_I(0), m_reg_DT(0), m_reg_ST(0), m_quirk_shift(0),
+      m_quirk_load_store(0) {}
 
 statemachine::status statemachine::step(uint16_t keystate, bool tick) {
 

@@ -32,6 +32,9 @@ std::string mem_of(const statemachine &mach) {
   return mem_str.str();
 }
 
+// Convenience function for other tests.
+bool is_zero(uint8_t x) { return x == 0; }
+
 inline void
 ASSERT_STEP(statemachine &mach, uint16_t keystate, bool tick,
             statemachine::status expected_status = statemachine::NO_ERROR) {
@@ -45,28 +48,13 @@ ASSERT_STEP(statemachine &mach, uint16_t keystate, bool tick,
       << next_instruction;
 }
 
-inline std::array<uint8_t, statemachine::MEMORY_SIZE>
-instructions_decode(const std::initializer_list<uint16_t> instructions) {
-
-  assert(instructions.size() <= (statemachine::MEMORY_SIZE / 2));
-
-  std::array<uint8_t, statemachine::MEMORY_SIZE> mem{0};
-  unsigned i = 0;
-  for (uint16_t instruction : instructions) {
-    // Necessary to do it this way b/c of endianness correctness.
-    mem[i++] = instruction >> 8;
-    mem[i++] = instruction & 0xFF;
-  }
-
-  return mem;
-}
-
 /// Tests 6xkk and 7xkk.
 TEST(StateMachineTest, Test6xkk_7xkk) {
-  // Should put 0x89 in register V7,
-  // then add 0x10 to it,
-  // then add 0xFF to test rollover.
-  statemachine machine({0x67, 0x89, 0x77, 0x10, 0x77, 0xFF}, 0, 0);
+  statemachine machine({
+      0x6789, // LD V7, 0x89
+      0x7710, // ADD V7, 0x10
+      0x77FF  // ADD V7, 0x77
+  });
   EXPECT_EQ(machine.regs()[0x7], 0);
   ASSERT_STEP(machine, 0, false);
   EXPECT_EQ(machine.regs()[0x7], 0x89);
@@ -95,7 +83,7 @@ TEST(StateMachineTest, Test1nnn) {
   mem[0x100] = 0x10;
   mem[0x101] = 0x00;
 
-  statemachine machine(mem, 0, 0);
+  statemachine machine(mem);
 
   // Make sure we never execute LD V6, 0x66
   for (int i = 0; i < 100; ++i) {
@@ -120,7 +108,7 @@ TEST(StateMachineTest, Test3xkk_4xkk) {
       0x6455, // LD V4, 0x55
   };
 
-  statemachine machine(instructions_decode(instructions), 0, 0);
+  statemachine machine(instructions);
 
   for (unsigned i = 0; i < 6 /* 2 of 8 instructions should be skipped */; ++i) {
     ASSERT_STEP(machine, 0, false);
@@ -155,7 +143,7 @@ TEST(StateMachineTest, Test5xy0_9xy0) {
       0x6D55, // LD VD, 0x55
   };
 
-  statemachine machine(instructions_decode(instructions), 0, 0);
+  statemachine machine(instructions);
 
   // Run until complete
   unsigned i;
@@ -177,7 +165,7 @@ TEST(StateMachineTest, Test8xy0) {
       0x6144, // LD V1, 0x44
       0x8310, // LD V3, V1
   };
-  statemachine machine(instructions_decode(instructions), 0, 0);
+  statemachine machine(instructions);
 
   ASSERT_STEP(machine, 0, false);
   ASSERT_STEP(machine, 0, false);
@@ -212,7 +200,7 @@ TEST(StateMachineTest, Test8xy1_7xy2_8xy3) {
       0x8F23, // XOR VF, V2
   };
 
-  statemachine machine(instructions_decode(instructions), 0, 0);
+  statemachine machine(instructions);
 
   for (unsigned i = 0; i < instructions.size(); ++i) {
     ASSERT_STEP(machine, 0, false);
@@ -228,14 +216,13 @@ TEST(StateMachineTest, Test8xy1_7xy2_8xy3) {
 }
 
 TEST(StateMachineTest, Test8xy4) {
-  statemachine machine(instructions_decode({
-                           0x6082, // LD V0, 0x82
-                           0x6102, // LD V1, 0x02
-                           0x8104, // ADD V1, V0
-                           0x82F0, // LD V2, VF (save VF for later)
-                           0x8004, // ADD V0, V0 (should overflow)
-                       }),
-                       0, 0);
+  statemachine machine({
+      0x6082, // LD V0, 0x82
+      0x6102, // LD V1, 0x02
+      0x8104, // ADD V1, V0
+      0x82F0, // LD V2, VF (save VF for later)
+      0x8004, // ADD V0, V0 (should overflow)
+  });
 
   for (int i = 0; i < 5; ++i) {
     ASSERT_STEP(machine, 0, false);
@@ -248,17 +235,16 @@ TEST(StateMachineTest, Test8xy4) {
 }
 
 TEST(StateMachineTest, Test8xy5) {
-  statemachine machine(instructions_decode({
-                           0x6092, // LD V0, 0x92
-                           0x6102, // LD V1, 0x02
-                           0x8015, // SUB V0, V1 (V0 = V0 - V1)
-                           0x8A00, // LD VA, V0 (save for later)
-                           0x8BF0, // LD VB, VF (save for later)
-                           0x6092, // LD V0, 0x92
-                           0x6102, // LD V1, 0x02
-                           0x8105, // SUB V1, V0 (V1 = V1 - V0)
-                       }),
-                       0, 0);
+  statemachine machine({
+      0x6092, // LD V0, 0x92
+      0x6102, // LD V1, 0x02
+      0x8015, // SUB V0, V1 (V0 = V0 - V1)
+      0x8A00, // LD VA, V0 (save for later)
+      0x8BF0, // LD VB, VF (save for later)
+      0x6092, // LD V0, 0x92
+      0x6102, // LD V1, 0x02
+      0x8105, // SUB V1, V0 (V1 = V1 - V0)
+  });
 
   for (int i = 0; i < 8; ++i) {
     ASSERT_STEP(machine, 0, false);
@@ -279,7 +265,8 @@ TEST(StateMachineTest, Test8xy6) {
       0x6293, // LD V2, 0x93
       0x82B6, // SHR V2, VB (VB should be untouched)
   };
-  statemachine machine(instructions_decode(instructions), 0, 0);
+
+  statemachine machine(instructions);
 
   for (unsigned i = 0; i < instructions.size(); ++i) {
     ASSERT_STEP(machine, 0, false);
@@ -305,7 +292,7 @@ TEST(StateMachineTest, Test8xy7) {
       0x6102, // LD V1, 0x02
       0x8107, // SUBN V1, V0 (V1 = V0 - V1)
   };
-  statemachine machine(instructions_decode(instructions), 0, 0);
+  statemachine machine(instructions);
 
   for (unsigned i = 0; i < instructions.size(); ++i) {
     ASSERT_STEP(machine, 0, false);
@@ -325,7 +312,7 @@ TEST(StateMachineTest, Test8xyE) {
       0x62F2, // LD V2, 0xF2
       0x82BE, // SHL V2, VB (VB should be untouched)
   };
-  statemachine machine(instructions_decode(instructions), 0, 0);
+  statemachine machine(instructions);
 
   for (unsigned i = 0; i < instructions.size(); ++i) {
     ASSERT_STEP(machine, 0, false);
@@ -340,66 +327,81 @@ TEST(StateMachineTest, Test8xyE) {
 }
 
 TEST(StateMachineTest, TestEx9E) {
-  std::initializer_list<uint16_t> instructions = {
-      0x6209, // LD V2, 0x09
-      0xE29E, // SKP V0
-      0x60FF, // LD V0, 0xFF
-      0x0000, // NOOP
-  };
+  {
+    std::initializer_list<uint16_t> instructions = {
+        0x6209, // LD V2, 0x09
+        0xE29E, // SKP V2
+        0x60FF, // LD V0, 0xFF
+        0x0000, // NOOP
+    };
 
-  { // Should skip b/c exact match.
-    statemachine machine(instructions_decode(instructions), 0, 0);
-    ASSERT_STEP(machine, 0, false);
-    ASSERT_STEP(machine, 1u << 9u, false);
-    ASSERT_STEP(machine, 0, false);
-    ASSERT_EQ(machine.regs()[0], 0x00);
-  }
+    { // Should skip b/c exact match.
+      statemachine machine(instructions);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_STEP(machine, 1u << 9u, false);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_EQ(machine.regs()[0], 0x00);
+    }
 
-  { // Should not skip because does not match.
-    statemachine machine(instructions_decode(instructions), 0, 0);
-    ASSERT_STEP(machine, 0, false);
-    ASSERT_STEP(machine, 1u << 2u, false);
-    ASSERT_STEP(machine, 0, false);
-    ASSERT_EQ(machine.regs()[0], 0xFF);
+    { // Should not skip because does not match.
+      statemachine machine(instructions);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_STEP(machine, 1u << 2u, false);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_EQ(machine.regs()[0], 0xFF);
+    }
   }
-  { // Should not skip because impossible request.
-    auto mem = instructions_decode(instructions);
-    mem[1] = 0x77; // There is no 0x77 key.
-    statemachine machine(mem, 0, 0);
+  { // Test unreasonable requests.
+    std::initializer_list<uint16_t> instructions = {
+        0x6277, // LD V2, 0x77
+        0xE29E, // SKP V2
+        0x60FF, // LD V0, 0xFF
+        0x0000, // NOOP
+    };
+    // Should not because 0x77 is not a real key and thus is never pressed.
+    statemachine machine(instructions);
     ASSERT_STEP(machine, 0, false);
-    ASSERT_STEP(machine, 0xFFFF, false);
+    ASSERT_STEP(machine, 0xFFFF /* Press all available keys */, false);
     ASSERT_STEP(machine, 0, false);
     ASSERT_EQ(machine.regs()[0], 0xFF);
   }
 }
 
 TEST(StateMachineTest, TestExA1) {
-  std::initializer_list<uint16_t> instructions = {
-      0x6209, // LD V2, 0x09
-      0xE2A1, // SKNP V0
-      0x60FF, // LD V0, 0xFF
-      0x0000, // NOOP
-  };
+  { // Test cases for reasonable inputs.
+    std::initializer_list<uint16_t> instructions = {
+        0x6209, // LD V2, 0x09
+        0xE2A1, // SKNP V2
+        0x60FF, // LD V0, 0xFF
+        0x0000, // NOOP
+    };
 
-  { // Should not skip b/c exact match.
-    statemachine machine(instructions_decode(instructions), 0, 0);
-    ASSERT_STEP(machine, 0, false);
-    ASSERT_STEP(machine, 1u << 9u, false);
-    ASSERT_STEP(machine, 0, false);
-    ASSERT_EQ(machine.regs()[0], 0xFF);
+    { // Should not skip b/c exact match.
+      statemachine machine(instructions);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_STEP(machine, 1u << 9u, false);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_EQ(machine.regs()[0], 0xFF);
+    }
+
+    { // Should skip because does not match.
+      statemachine machine(instructions);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_STEP(machine, 1u << 2u, false);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_EQ(machine.regs()[0], 0x00);
+    }
   }
 
-  { // Should skip because does not match.
-    statemachine machine(instructions_decode(instructions), 0, 0);
-    ASSERT_STEP(machine, 0, false);
-    ASSERT_STEP(machine, 1u << 2u, false);
-    ASSERT_STEP(machine, 0, false);
-    ASSERT_EQ(machine.regs()[0], 0x00);
-  }
-  { // Should skip because impossible request.
-    auto mem = instructions_decode(instructions);
-    mem[1] = 0x77; // There is no 0x77 key.
-    statemachine machine(mem, 0, 0);
+  { // Test cases for unreasonable inputs.
+    // Should skip because 0x77 is not a real key and thus is never pressed.
+    std::initializer_list<uint16_t> instructions = {
+        0x6277, // LD V2, 0x77
+        0xE2A1, // SKNP V2
+        0x60FF, // LD V0, 0xFF
+        0x0000, // NOOP
+    };
+    statemachine machine(instructions);
     ASSERT_STEP(machine, 0, false);
     ASSERT_STEP(machine, 0xFFFF, false);
     ASSERT_STEP(machine, 0, false);
@@ -415,7 +417,7 @@ TEST(StateMachineTest, TestAnnn_Fx1E) {
       0xF01E, // ADD I, V0 (should rollover)
       0x0000, // Do nothing (allows m_reg_I to get masked)
   };
-  statemachine machine(instructions_decode(instructions), 0, 0);
+  statemachine machine(instructions);
 
   ASSERT_STEP(machine, 0, false);
   ASSERT_EQ(machine.reg_I(), 0xF10);
@@ -432,7 +434,7 @@ TEST(StateMachineTest, TestFx0A) {
       0xF00A, // LD V0, K
       0x0000, // NOOP
   };
-  statemachine machine(instructions_decode(instructions), 0, 0);
+  statemachine machine(instructions);
 
   // Spin a bit, making sure that the PC doesn't progress.
   for (unsigned i = 0; i < 100; ++i) {
@@ -452,7 +454,7 @@ TEST(StateMachineTest, TestFx29) {
       0x6004, // LD V0, 0x4
       0xF029, // LD F, V0
   };
-  statemachine machine(instructions_decode(instructions), 0, test_font_begin);
+  statemachine machine(instructions, {.font_begin = test_font_begin});
 
   ASSERT_STEP(machine, 0, false);
   ASSERT_EQ(machine.reg_I(), test_font_begin);
@@ -470,7 +472,7 @@ TEST(StateMachineTest, TestFx15_Fx18_Timers) {
 
       0x0000, 0x0000, 0x0000, 0x0000 /* NO-OPs */
   };
-  statemachine machine(instructions_decode(instructions), 0, 0);
+  statemachine machine(instructions);
 
   // Make sure the values are loaded.
   ASSERT_STEP(machine, 0, false);
@@ -498,7 +500,7 @@ TEST(StateMachineTest, TestFx33) {
       0x6000 | 123u, // LD V0, 123
       0xF033,        // LD B, V0
   };
-  statemachine machine(instructions_decode(instructions), 0, 0);
+  statemachine machine(instructions);
 
   ASSERT_STEP(machine, 0, false);
   ASSERT_STEP(machine, 0, false);
@@ -519,13 +521,12 @@ TEST(StateMachineTest, TestFx55) {
       0xAF00, // LD I, 0xF00
       0xFF55, // LD [I], VF
   };
-  statemachine machine(instructions_decode(instructions), 0, 0);
+  statemachine machine(instructions);
 
   for (unsigned i = 0; i < instructions.size(); ++i) {
     ASSERT_STEP(machine, 0, false);
   }
 
-  auto is_zero = [](uint8_t x) { return x == 0; };
   auto machine_regs = machine.regs();
   auto machine_mem = machine.memory();
 
@@ -562,9 +563,8 @@ TEST(StateMachineTest, TestFx65) {
       // Fill 16 bytes with nonsense.
       0xDEAD, 0xBEEF, 0x000F, 0xF1CE, 0xC0DE, 0xFACE, 0xFEED, 0xF00D};
 
-  statemachine machine(instructions_decode(instructions), 0, 0);
+  statemachine machine(instructions);
 
-  auto is_zero = [](uint8_t x) { return x == 0; };
   auto machine_regs = machine.regs();
   auto machine_mem = machine.memory();
   auto reg_V8_begin = machine_regs.begin() + 8;
@@ -592,7 +592,7 @@ TEST(StateMachineTest, TestCxkk) {
       0xC0DB, 0xC1DB, 0xC2DB, 0xC3DB, 0xC4DB, 0xC5DB, 0xC6DB, 0xC7DB,
       0xC8DB, 0xC9DB, 0xCADB, 0xCBDB, 0xCCDB, 0xCDDB, 0xCEDB, 0xCFDB,
   };
-  statemachine machine(instructions_decode(instructions), 0, 0);
+  statemachine machine(instructions);
 
   for (unsigned i = 0; i < instructions.size(); ++i) {
     ASSERT_STEP(machine, 0, false);
