@@ -47,7 +47,26 @@ ASSERT_STEP(statemachine &mach, uint16_t keystate, bool tick,
       << next_instruction;
 }
 
-/// Tests 6xkk and 7xkk.
+TEST(StateMachineTest, Test00EE_2nnn) {
+  std::initializer_list<uint16_t> instructions = {
+      0x2004, // CALL 0x004
+      0x1002, // JP 0x002 (hang in place)
+      0x2008, // CALL 0x008
+      0x00EE, // RET (when executed, should jump to JP instruction)
+      0x00EE  // RET (should jump to above RET)
+  };
+
+  statemachine machine(instructions);
+  ASSERT_STEP(machine, 0, 0);
+  ASSERT_EQ(machine.pc(), 0x004);
+  ASSERT_STEP(machine, 0, 0);
+  ASSERT_EQ(machine.pc(), 0x008);
+  ASSERT_STEP(machine, 0, 0);
+  ASSERT_EQ(machine.pc(), 0x006);
+  ASSERT_STEP(machine, 0, 0);
+  ASSERT_EQ(machine.pc(), 0x002);
+}
+
 TEST(StateMachineTest, Test6xkk_7xkk) {
   statemachine machine({
       0x6789, // LD V7, 0x89
