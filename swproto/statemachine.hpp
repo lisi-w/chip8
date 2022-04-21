@@ -91,7 +91,7 @@ private:
   };
 
   std::array<uint8_t, MEMORY_SIZE> m_mem;
-  std::bitset<DISPLAY_WIDTH * DISPLAY_HEIGHT> m_display;
+  std::array<uint8_t, DISPLAY_WIDTH * DISPLAY_HEIGHT / 8> m_display;
   std::array<uint8_t, 16> m_regs;
   instruction_stack m_stack;
   uint16_t m_pc;
