@@ -1,9 +1,11 @@
-#include "statemachine.hpp"
 #include <algorithm>
 #include <functional>
 #include <gtest/gtest.h>
 #include <initializer_list>
 #include <sstream>
+
+#include "font.hpp"
+#include "statemachine.hpp"
 
 std::string regs_of(const statemachine &mach) {
   using namespace std;
@@ -513,7 +515,7 @@ TEST(StateMachineTest, TestFx29) {
   ASSERT_EQ(machine.reg_I(), test_font_begin);
   ASSERT_STEP(machine, 0, false);
   ASSERT_STEP(machine, 0, false);
-  ASSERT_EQ(machine.reg_I(), test_font_begin + (4 * statemachine::FONT_ROWS));
+  ASSERT_EQ(machine.reg_I(), test_font_begin + (4 * FONT_SPRITE_SIZE));
 }
 
 TEST(StateMachineTest, TestFx15_Fx18_Timers) {

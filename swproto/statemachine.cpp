@@ -1,15 +1,19 @@
-#include "statemachine.hpp"
 #include <algorithm>
 #include <bitset>
 #include <cassert>
 #include <clocale>
+#include <cmath>
 #include <cstddef>
 #include <iomanip>
 #include <ios>
 #include <iostream>
+#include <iterator>
 #include <mutex>
 #include <random>
 #include <vector>
+
+#include "font.hpp"
+#include "statemachine.hpp"
 
 static std::mt19937 random_generator;
 static std::mutex random_mutex;
@@ -54,9 +58,8 @@ statemachine::status statemachine::step(uint16_t keystate, bool tick) {
   uint16_t opcode =
       m_mem.at(m_pc | 1) | (m_mem.at(static_cast<uint16_t>(m_pc)) << 8);
 
-  std::cout << "pc: " << std::hex << std::setw(4) << std::setfill('0') << m_pc
-            << " opcode: " << std::hex << std::setw(4) << std::setfill('0')
-            << opcode << '\n';
+  std::cout << "pc: " << m_pc << " opcode: " << std::hex << std::setw(4)
+            << std::setfill('0') << opcode << '\n';
 
   uint16_t nnn = opcode & 0xFFF;
   uint16_t n = opcode & 0xF;
@@ -102,6 +105,7 @@ statemachine::status statemachine::step(uint16_t keystate, bool tick) {
     if (m_stack.size() == STACK_SIZE) [[unlikely]] {
       return PUSHED_FULL_STACK;
     } else {
+      m_pc += 2;
       m_stack.push(m_pc);
       m_pc = nnn;
       return NO_ERROR;
@@ -238,6 +242,7 @@ statemachine::status statemachine::step(uint16_t keystate, bool tick) {
     uint8_t vy = m_regs.at(y);
     m_regs[0xF] = 0;
 
+    std::cout << "DRAW: vx=" << (int)vx << " vy=" << (int)vy << std::endl;
     for (uint8_t mem_sprite_pos = m_reg_I, mem_sprite_end = m_reg_I + n,
                  row = vy, row_end = vy + n;
          row < row_end; ++row, ++mem_sprite_pos) {
@@ -258,15 +263,17 @@ statemachine::status statemachine::step(uint16_t keystate, bool tick) {
       shifted >>= vx & 0b111;
 
       // Now we fill the bytes spanned by this sprite.
-      size_t first_idx = (row * (DISPLAY_WIDTH / 8)) + (vx >> 3);
-      size_t last_idx =
-          (row * (DISPLAY_WIDTH / 8)) + (((vx >> 3) + 1) % DISPLAY_WIDTH);
+      size_t row_begin = (row & ROW_MASK) * ROW_SIZE;
+      size_t first_idx = row_begin + (vx >> 3);
+      size_t last_idx = row_begin + (((vx >> 3) + 1) & (ROW_SIZE - 1));
 
       auto first_iter = m_display.begin() + first_idx;
       auto last_iter = m_display.begin() + last_idx;
 
-      std::cout << "first last shifted " << first_idx << ' ' << last_idx << ' '
-                << shifted << std::endl;
+      std::cout << "  first_idx=" << first_idx << " last_idx=" << last_idx
+                << "\n   shifted=" << std::bitset<16>(shifted)
+                << "\n      mask=" << std::bitset<8>(*first_iter)
+                << std::bitset<8>(*last_iter) << std::endl;
 
       if (*first_iter & (shifted >> 8)) {
         m_regs[0xF] = 1;
@@ -334,7 +341,7 @@ statemachine::status statemachine::step(uint16_t keystate, bool tick) {
     } break;
 
     case 0x29: {
-      m_reg_I = m_font_begin + (m_regs.at(x) * FONT_ROWS);
+      m_reg_I = m_font_begin + (m_regs.at(x) * FONT_SPRITE_SIZE);
     } break;
 
     case 0x33: {
