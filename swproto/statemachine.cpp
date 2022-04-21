@@ -1,4 +1,5 @@
 #include "statemachine.hpp"
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <iomanip>
@@ -72,7 +73,7 @@ statemachine::status statemachine::step(uint16_t keystate, bool tick) {
   switch (opcode >> 12) {
   case 0x0: {
     if (opcode == 0x00E0) {
-      m_display.reset();
+      std::fill(m_display.begin(), m_display.end(), 0);
     } else if (opcode == 0x00EE) {
       if (m_stack.empty()) [[unlikely]] {
         return POPPED_EMPTY_STACK;
@@ -230,28 +231,43 @@ statemachine::status statemachine::step(uint16_t keystate, bool tick) {
     uint8_t vy = m_regs.at(y);
     m_regs[0xF] = 0;
 
-    uint16_t line = vy;
-    uint16_t end_line = vy + n;
-    uint16_t sprite_source = m_reg_I;
-    uint16_t line_abs_begin_pos = vy * DISPLAY_WIDTH;
+    for (uint8_t mem_sprite_pos = m_reg_I, mem_sprite_end = m_reg_I + n,
+                 row = vy, row_end = vy + n;
+         row < row_end; ++row, ++mem_sprite_pos) {
+      uint8_t sprite_row_contents = m_mem.at(mem_sprite_pos & 0xFFF);
 
-    while (line != end_line) {
-      auto pos_x = vx;
-      for (uint8_t bits_to_write = m_mem.at(sprite_source); bits_to_write;
-           bits_to_write <<= 1, pos_x = (pos_x + 1) % DISPLAY_WIDTH) {
+      // In drawing each line of the sprite, we will cross a byte-boundary if
+      // VX isn't divisible by 8. Thus, we have to flip the bits in each byte
+      // across the boundary carefully.
 
-        auto pos = line_abs_begin_pos + pos_x;
-        bool current_pixel = m_display[pos];
-        bool bit_should_flip = bits_to_write & 0x80;
-        if (current_pixel & bit_should_flip) {
-          m_regs[0xF] = 1;
-        }
-        m_display[pos] = current_pixel ^ bit_should_flip;
+      // To figure out which bits go where, we shift the sprite row
+      // in a uint16_t which should span both possible bytes that our
+      // shifted should now store in its upper byte the bits that will be
+      // flipped in the first byte and the bits that will be flipped in the
+      // second byte in the lower byte.
+      // For example, for vx=3, when the sprite row contents are 0x10011001,
+      // shifted should be 0b0001001100100000.
+      uint16_t shifted = static_cast<uint16_t>(sprite_row_contents) << 8;
+      shifted >>= vx & 0b111;
+
+      // Now we fill the bytes spanned by this sprite.
+      size_t first_idx = (row * DISPLAY_WIDTH) | (vx >> 3);
+      size_t last_idx =
+          (row * DISPLAY_WIDTH) | (((vx >> 3) + 1) % DISPLAY_WIDTH);
+
+      auto first_iter = m_display.begin() + first_idx;
+      auto last_iter = m_display.begin() + last_idx;
+
+      if (*first_iter & (shifted >> 8)) {
+        m_regs[0xF] = 1;
       }
-      ++line;
-      ++sprite_source;
-      line_abs_begin_pos =
-          (line_abs_begin_pos + DISPLAY_WIDTH) % m_display.size();
+
+      *first_iter ^= shifted >> 8;
+
+      if (*last_iter & shifted) {
+        m_regs[0xF] = 1;
+      }
+      *last_iter ^= shifted & 0xFF;
     }
   } break;
 
