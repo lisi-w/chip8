@@ -54,55 +54,55 @@ bool update_keys(uint16_t &keystate, sf::Event &event) {
   uint16_t update;
   switch (event.key.code) {
   case sf::Keyboard::Num1:
-    update = 1 << 15;
+    update = 1 << 0x1;
     break;
   case sf::Keyboard::Num2:
-    update = 1 << 14;
+    update = 1 << 0x2;
     break;
   case sf::Keyboard::Num3:
-    update = 1 << 13;
+    update = 1 << 0x3;
     break;
   case sf::Keyboard::Num4:
-    update = 1 << 12;
+    update = 1 << 0xC;
     break;
 
   case sf::Keyboard::Q:
-    update = 1 << 11;
+    update = 1 << 0x4;
     break;
   case sf::Keyboard::W:
-    update = 1 << 10;
+    update = 1 << 0x5;
     break;
   case sf::Keyboard::E:
-    update = 1 << 9;
+    update = 1 << 0x6;
     break;
   case sf::Keyboard::R:
-    update = 1 << 8;
+    update = 1 << 0xD;
     break;
 
   case sf::Keyboard::A:
-    update = 1 << 7;
+    update = 1 << 0x7;
     break;
   case sf::Keyboard::S:
-    update = 1 << 6;
+    update = 1 << 0x8;
     break;
   case sf::Keyboard::D:
-    update = 1 << 5;
+    update = 1 << 0x9;
     break;
   case sf::Keyboard::F:
-    update = 1 << 4;
+    update = 1 << 0xE;
     break;
 
   case sf::Keyboard::Z:
-    update = 1 << 3;
+    update = 1 << 0xA;
     break;
   case sf::Keyboard::X:
-    update = 1 << 2;
+    update = 1 << 0x0;
     break;
   case sf::Keyboard::C:
-    update = 1 << 1;
+    update = 1 << 0xB;
     break;
   case sf::Keyboard::V:
-    update = 1 << 0;
+    update = 1 << 0xF;
     break;
 
   default:
@@ -155,17 +155,16 @@ int main(int argc, char **argv) {
   while (window.isOpen()) {
     window.clear();
 
-    // Process events
-    for (sf::Event event; window.pollEvent(event);) {
-      // Close window: exit
-      if (event.type == sf::Event::Closed) {
-        window.close();
-      } else {
-        update_keys(keystate, event);
+    for (int i = 0; (ret == 0) && (i < (700 / 60)); ++i) {
+      // Process events before every machine step.
+      for (sf::Event event; window.pollEvent(event);) {
+        // Close window: exit
+        if (event.type == sf::Event::Closed) {
+          window.close();
+        } else {
+          update_keys(keystate, event);
+        }
       }
-    }
-
-    for (int i = 0; (ret == 0) && (i < (120 / 60)); ++i) {
       if (machine.step(keystate, true) != statemachine::NO_ERROR) {
         window.close();
         ret = 1;
