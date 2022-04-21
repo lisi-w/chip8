@@ -16,6 +16,7 @@ public:
   const static unsigned DISPLAY_HEIGHT = 32;
   const static unsigned DISPLAY_SIZE = DISPLAY_WIDTH * DISPLAY_HEIGHT / 8;
   const static unsigned FONT_ROWS = 5;
+  const static unsigned PROG_BEGIN = 0x200;
 
   // Non-negative statuses are those from which the state machine may recover.
   // Negative statuses are those with overflows.

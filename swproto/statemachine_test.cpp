@@ -5,8 +5,6 @@
 #include <initializer_list>
 #include <sstream>
 
-// Convenience functios for debugging.
-
 std::string regs_of(const statemachine &mach) {
   using namespace std;
   stringstream reg_summary;
@@ -31,8 +29,6 @@ std::string mem_of(const statemachine &mach) {
   }
   return mem_str.str();
 }
-
-// Convenience function for other tests.
 
 bool is_zero(uint8_t x) { return x == 0; }
 

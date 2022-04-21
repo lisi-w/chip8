@@ -1,8 +1,12 @@
 #include "statemachine.hpp"
 #include <algorithm>
+#include <bitset>
 #include <cassert>
+#include <clocale>
 #include <cstddef>
 #include <iomanip>
+#include <ios>
+#include <iostream>
 #include <mutex>
 #include <random>
 #include <vector>
@@ -49,6 +53,10 @@ statemachine::status statemachine::step(uint16_t keystate, bool tick) {
   // Opcodes are stored in most-significant-byte-first.
   uint16_t opcode =
       m_mem.at(m_pc | 1) | (m_mem.at(static_cast<uint16_t>(m_pc)) << 8);
+
+  std::cout << "pc: " << std::hex << std::setw(4) << std::setfill('0') << m_pc
+            << " opcode: " << std::hex << std::setw(4) << std::setfill('0')
+            << opcode << '\n';
 
   uint16_t nnn = opcode & 0xFFF;
   uint16_t n = opcode & 0xF;
@@ -250,12 +258,15 @@ statemachine::status statemachine::step(uint16_t keystate, bool tick) {
       shifted >>= vx & 0b111;
 
       // Now we fill the bytes spanned by this sprite.
-      size_t first_idx = (row * DISPLAY_WIDTH) | (vx >> 3);
+      size_t first_idx = (row * (DISPLAY_WIDTH / 8)) + (vx >> 3);
       size_t last_idx =
-          (row * DISPLAY_WIDTH) | (((vx >> 3) + 1) % DISPLAY_WIDTH);
+          (row * (DISPLAY_WIDTH / 8)) + (((vx >> 3) + 1) % DISPLAY_WIDTH);
 
       auto first_iter = m_display.begin() + first_idx;
       auto last_iter = m_display.begin() + last_idx;
+
+      std::cout << "first last shifted " << first_idx << ' ' << last_idx << ' '
+                << shifted << std::endl;
 
       if (*first_iter & (shifted >> 8)) {
         m_regs[0xF] = 1;
