@@ -33,6 +33,7 @@ std::string mem_of(const statemachine &mach) {
 }
 
 // Convenience function for other tests.
+
 bool is_zero(uint8_t x) { return x == 0; }
 
 inline void
@@ -257,27 +258,54 @@ TEST(StateMachineTest, Test8xy5) {
 }
 
 TEST(StateMachineTest, Test8xy6) {
-  // Choose 0x92 and 0x93 to make sure we're using logical right shifts.
-  std::initializer_list<uint16_t> instructions = {
-      0x6092, // LD V0, 0x92
-      0x80A6, // SHR V0, VA (VA should be untouched)
-      0x8AF0, // LD V1, VF (save for later)
-      0x6293, // LD V2, 0x93
-      0x82B6, // SHR V2, VB (VB should be untouched)
-  };
+  { // Cases where VF should not be set.
+    std::initializer_list<uint16_t> instructions{
+        0x6002, // LD V0 0x02
+        0x6104, // LD V1 0x04
+        0x8016, // SHR V0, V1
+    };
 
-  statemachine machine(instructions);
+    { // Case with shift quirks.
+      statemachine machine(instructions, {.quirk_shift = true});
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_EQ(machine.regs()[0x0], 1);
+      ASSERT_EQ(machine.regs()[0xF], 0);
+    }
+    { // Case without shift quirks.
+      statemachine machine(instructions, {.quirk_shift = false});
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_EQ(machine.regs()[0x0], 2);
+      ASSERT_EQ(machine.regs()[0xF], 0);
+    }
+  } // Cases where VF should be set.
+  {
+    std::initializer_list<uint16_t> instructions{
+        0x6003, // LD V0 0x03
+        0x6105, // LD V1 0x05
+        0x8016, // SHR V0, V1
+    };
 
-  for (unsigned i = 0; i < instructions.size(); ++i) {
-    ASSERT_STEP(machine, 0, false);
+    { // Case with shift quirks.
+      statemachine machine(instructions, {.quirk_shift = true});
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_EQ(machine.regs()[0x0], 1);
+      ASSERT_EQ(machine.regs()[0xF], 1);
+    }
+    { // Case without shift quirks.
+      statemachine machine(instructions, {.quirk_shift = false});
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_EQ(machine.regs()[0x0], 2);
+      ASSERT_EQ(machine.regs()[0xF], 1);
+    }
   }
-
-  ASSERT_EQ(machine.regs()[0x0], 0x49); // (0x92 >> 2) = 0x49
-  ASSERT_EQ(machine.regs()[0x1], 0x00); // Check VF
-  ASSERT_EQ(machine.regs()[0xA], 0x00); // VA should be untouched.
-  ASSERT_EQ(machine.regs()[0x2], 0x49); // (0x93 >> 2) = 0x49
-  ASSERT_EQ(machine.regs()[0xF], 0x01); // Check VF
-  ASSERT_EQ(machine.regs()[0xB], 0x00); // VB should be untouched.
 }
 
 // Nearly identical to test for 8xy5
@@ -305,25 +333,54 @@ TEST(StateMachineTest, Test8xy7) {
 }
 
 TEST(StateMachineTest, Test8xyE) {
-  std::initializer_list<uint16_t> instructions = {
-      0x6072, // LD V0, 0x72
-      0x80AE, // SHL V0, VA (VA should be untouched)
-      0x8AF0, // LD V1, VF (save for later)
-      0x62F2, // LD V2, 0xF2
-      0x82BE, // SHL V2, VB (VB should be untouched)
-  };
-  statemachine machine(instructions);
+  { // Cases where VF should not be set.
+    std::initializer_list<uint16_t> instructions{
+        0x6005, // LD V0 0x05
+        0x6107, // LD V1 0x07
+        0x801E, // SHL V0, V1
+    };
 
-  for (unsigned i = 0; i < instructions.size(); ++i) {
-    ASSERT_STEP(machine, 0, false);
+    { // Case with shift quirks.
+      statemachine machine(instructions, {.quirk_shift = true});
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_EQ(machine.regs()[0x0], 10);
+      ASSERT_EQ(machine.regs()[0xF], 0);
+    }
+    { // Case without shift quirks.
+      statemachine machine(instructions, {.quirk_shift = false});
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_EQ(machine.regs()[0x0], 14);
+      ASSERT_EQ(machine.regs()[0xF], 0);
+    }
+  } // Cases where VF should be set.
+  {
+    std::initializer_list<uint16_t> instructions{
+        0x6085, // LD V0 0x85
+        0x6187, // LD V1 0x87
+        0x801E, // SHL V0, V1
+    };
+
+    { // Case with shift quirks.
+      statemachine machine(instructions, {.quirk_shift = true});
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_EQ(machine.regs()[0x0], 10);
+      ASSERT_EQ(machine.regs()[0xF], 1);
+    }
+    { // Case without shift quirks.
+      statemachine machine(instructions, {.quirk_shift = false});
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_STEP(machine, 0, false);
+      ASSERT_EQ(machine.regs()[0x0], 14);
+      ASSERT_EQ(machine.regs()[0xF], 1);
+    }
   }
-
-  ASSERT_EQ(machine.regs()[0x0], 0xE4); // (0x72 << 2) = 0xE4
-  ASSERT_EQ(machine.regs()[0x1], 0x00); // Check VF
-  ASSERT_EQ(machine.regs()[0xA], 0x00); // VA should be untouched.
-  ASSERT_EQ(machine.regs()[0x2], 0xE4); // (0xF2 << 2) = 0xE4
-  ASSERT_EQ(machine.regs()[0xF], 0x01); // Check VF
-  ASSERT_EQ(machine.regs()[0xB], 0x00); // VB should be untouched.
 }
 
 TEST(StateMachineTest, TestEx9E) {

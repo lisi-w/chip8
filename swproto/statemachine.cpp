@@ -37,8 +37,8 @@ statemachine::statemachine(std::initializer_list<uint16_t> instructions,
                            statemachine::init_conf conf)
     : m_mem(instructions_decode(instructions)), m_display{0}, m_regs{0},
       m_stack{}, m_pc(conf.pc), m_font_begin(conf.font_begin & 0xFFF),
-      m_reg_I(0), m_reg_DT(0), m_reg_ST(0), m_quirk_shift(0),
-      m_quirk_load_store(0) {}
+      m_reg_I(0), m_reg_DT(0), m_reg_ST(0), m_quirk_shift(conf.quirk_shift),
+      m_quirk_load_store(conf.quirk_load_store) {}
 
 statemachine::status statemachine::step(uint16_t keystate, bool tick) {
 
@@ -166,11 +166,14 @@ statemachine::status statemachine::step(uint16_t keystate, bool tick) {
     } break;
 
     case 0x6: {
-      if (x == 0xF) [[unlikely]] {
+      if ((x == 0xF) || (y == 0xF)) [[unlikely]] {
         return VFRACE;
       }
-      m_regs[0xF] = m_regs.at(x) & 1;
-      m_regs[x] >>= 1;
+
+      auto src_idx = m_quirk_shift ? x : y;
+
+      m_regs[0xF] = m_regs.at(src_idx) & 1;
+      m_regs[x] = m_regs.at(src_idx) >> 1;
     } break;
 
     case 0x7: {
@@ -182,11 +185,14 @@ statemachine::status statemachine::step(uint16_t keystate, bool tick) {
     } break;
 
     case 0xE: {
-      if (x == 0xF) [[unlikely]] {
+      if ((x == 0xF) || (y == 0xF)) [[unlikely]] {
         return VFRACE;
       }
-      m_regs[0xF] = m_regs.at(x) >> 7;
-      m_regs[x] <<= 1;
+
+      auto src_idx = m_quirk_shift ? x : y;
+
+      m_regs[0xF] = m_regs.at(src_idx) >> 7;
+      m_regs[x] = m_regs.at(src_idx) << 1;
     } break;
 
     default:
