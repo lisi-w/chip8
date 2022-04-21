@@ -2,7 +2,6 @@
 #define SWIMP_STATEMACHINE_H
 
 #include <array>
-#include <bitset>
 #include <cstdint>
 #include <initializer_list>
 #include <span>
@@ -15,6 +14,7 @@ public:
   const static unsigned STACK_SIZE = 16;
   const static unsigned DISPLAY_WIDTH = 64;
   const static unsigned DISPLAY_HEIGHT = 32;
+  const static unsigned DISPLAY_SIZE = DISPLAY_WIDTH * DISPLAY_HEIGHT / 8;
   const static unsigned FONT_ROWS = 5;
 
   // Non-negative statuses are those from which the state machine may recover.
@@ -61,7 +61,7 @@ public:
   inline uint8_t reg_ST() const { return m_reg_ST; };
 
   /// Get current display
-  inline const std::bitset<DISPLAY_WIDTH * DISPLAY_HEIGHT> &display() const {
+  inline const std::array<uint8_t, DISPLAY_SIZE> display() const {
     return m_display;
   };
 
@@ -91,7 +91,7 @@ private:
   };
 
   std::array<uint8_t, MEMORY_SIZE> m_mem;
-  std::array<uint8_t, DISPLAY_WIDTH * DISPLAY_HEIGHT / 8> m_display;
+  std::array<uint8_t, DISPLAY_SIZE> m_display;
   std::array<uint8_t, 16> m_regs;
   instruction_stack m_stack;
   uint16_t m_pc;
