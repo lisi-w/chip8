@@ -15,20 +15,6 @@
 
 const size_t SCALING_FACTOR = 1700 / statemachine::DISPLAY_WIDTH;
 
-std::string mem_of(const statemachine &mach) {
-  using namespace std;
-  stringstream mem_str;
-  mem_str << "mem:";
-  unsigned i = 0;
-  for (uint8_t val : mach.memory()) {
-    if ((i++ % 32) == 0) {
-      mem_str << "\n  ";
-    }
-    mem_str << hex << setw(2) << setfill('0') << (int)val << " ";
-  }
-  return mem_str.str();
-}
-
 /// Reads file contents into CHIP8 memory and places fonts starting at 0x000.
 std::optional<std::array<uint8_t, statemachine::MEMORY_SIZE>>
 try_load(std::string path) {
@@ -159,7 +145,7 @@ int main(int argc, char **argv) {
 
   sf::RenderWindow window(
       sf::VideoMode(SCALING_FACTOR * statemachine::DISPLAY_WIDTH,
-                    SCALING_FACTOR * statemachine::DISPLAY_HEIGHT),
+                    SCALING_FACTOR * (statemachine::DISPLAY_HEIGHT + 1)),
       "CHIP8 Emulator");
 
   window.setFramerateLimit(60);
@@ -179,29 +165,35 @@ int main(int argc, char **argv) {
       }
     }
 
-    for (int i = 0; i < (700 / 60); ++i) {
+    for (int i = 0; (ret == 0) && (i < (120 / 60)); ++i) {
       if (machine.step(keystate, true) != statemachine::NO_ERROR) {
         window.close();
         ret = 1;
         break;
       }
     }
-    if (ret != 0) {
-      break;
-    }
 
     auto display = machine.display();
 
-    for (size_t x = 0; x < statemachine::DISPLAY_WIDTH; ++x) {
-      for (size_t y = 0; y < statemachine::DISPLAY_HEIGHT; ++y) {
-        if (display.at(y * (statemachine::DISPLAY_WIDTH / 8) + (x / 8)) &
-            (1 << (x & 0x111))) {
-
+    for (size_t y = 0; y < statemachine::DISPLAY_HEIGHT; ++y) {
+      auto row_begin = y * statemachine::ROW_SIZE;
+      for (size_t x = 0; x < statemachine::DISPLAY_WIDTH; ++x) {
+        if (display.at(row_begin + (x / 8)) & (0x80 >> (x & 0b111))) {
           pixel.setPosition(
               sf::Vector2f(x * SCALING_FACTOR, y * SCALING_FACTOR));
           window.draw(pixel);
         }
       }
+    }
+
+    // Display pixel on bottom left if sound is "playing".
+    if (machine.reg_ST()) {
+      pixel.setPosition(0, statemachine::DISPLAY_HEIGHT * SCALING_FACTOR);
+    }
+    // Display pixel next position over if delay timer is counting.
+    if (machine.reg_DT()) {
+      pixel.setPosition(SCALING_FACTOR,
+                        statemachine::DISPLAY_HEIGHT * SCALING_FACTOR);
     }
 
     window.display();

@@ -13,9 +13,10 @@ public:
   const static unsigned MEMORY_SIZE = 4096;
   const static unsigned STACK_SIZE = 16;
   const static unsigned DISPLAY_WIDTH = 64;
+  const static unsigned ROW_SIZE = DISPLAY_WIDTH / 8;
   const static unsigned DISPLAY_HEIGHT = 32;
-  const static unsigned DISPLAY_SIZE = DISPLAY_WIDTH * DISPLAY_HEIGHT / 8;
-  const static unsigned FONT_ROWS = 5;
+  const static unsigned ROW_MASK = DISPLAY_HEIGHT - 1;
+  const static unsigned DISPLAY_SIZE = ROW_SIZE * DISPLAY_HEIGHT;
   const static unsigned PROG_BEGIN = 0x200;
 
   // Non-negative statuses are those from which the state machine may recover.
@@ -31,6 +32,7 @@ public:
     DISPLAY_OVERFLOW = -6,
     IMPOSSIBLE_KEYPRESS_REQUEST = -6,
     PC_UNALIGNED = -7,
+    DEBUG_ERROR = -8, // Thrown for testing purposes.
   };
 
   struct init_conf {
