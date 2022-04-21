@@ -2,9 +2,9 @@
 
 #include "statemachine.hpp"
 
-int main(const int, const char **) {
+int main() {
   using namespace std;
-  statemachine machine({0}, 0, 0);
+  statemachine machine({});
   cout << "Hello World!\n";
   return 0;
 }

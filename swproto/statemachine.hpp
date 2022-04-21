@@ -4,6 +4,7 @@
 #include <array>
 #include <bitset>
 #include <cstdint>
+#include <initializer_list>
 #include <span>
 #include <stack>
 #include <vector>
@@ -31,8 +32,19 @@ public:
     PC_UNALIGNED = -7,
   };
 
-  statemachine(std::array<uint8_t, MEMORY_SIZE> mem, uint16_t pc,
-               uint16_t font_begin);
+  enum quirks { SHIFT = 1, LOAD_STORE = 2 };
+
+  struct init_conf {
+    uint16_t pc;
+    uint16_t font_begin;
+    bool quirk_shift : 1;
+    bool quirk_load_store : 1;
+  };
+
+  statemachine(std::array<uint8_t, MEMORY_SIZE> mem, init_conf conf = {});
+
+  statemachine(std::initializer_list<uint16_t> instructions,
+               init_conf conf = {});
 
   /**
    * Executes one instruction
@@ -90,6 +102,11 @@ private:
   // Timer registers.
   uint8_t m_reg_DT; // delay timer.
   uint8_t m_reg_ST; // sound timer
+  /* Quirk behavior detailed in
+   * http://mir3z.github.io/chip8-emu/doc/chip8-cpu.js.html#sunlight-1-line-119
+   */
+  bool m_quirk_shift : 1;
+  bool m_quirk_load_store : 1;
 };
 
 #endif // SWIMP_STATEMACHINE_H
