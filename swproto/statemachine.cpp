@@ -185,7 +185,7 @@ statemachine::status statemachine::step(uint16_t keystate, bool tick) {
       auto src_idx = m_quirk_shift ? x : y;
 
       m_regs[0xF] = m_regs.at(src_idx) & 1;
-      m_regs[x] = m_regs.at(src_idx) >> 1;
+      m_regs[x] = m_regs.at(src_idx) >> 1u;
     } break;
 
     case 0x7: {
@@ -203,8 +203,8 @@ statemachine::status statemachine::step(uint16_t keystate, bool tick) {
 
       auto src_idx = m_quirk_shift ? x : y;
 
-      m_regs[0xF] = m_regs.at(src_idx) >> 7;
-      m_regs[x] = m_regs.at(src_idx) << 1;
+      m_regs[0xF] = m_regs.at(src_idx) >> 7u;
+      m_regs[x] = m_regs.at(src_idx) << 1u;
     } break;
 
     default:
@@ -264,7 +264,7 @@ statemachine::status statemachine::step(uint16_t keystate, bool tick) {
 
       // Now we fill the bytes spanned by this sprite.
       size_t row_begin = (row & ROW_MASK) * ROW_SIZE;
-      size_t first_idx = row_begin + (vx >> 3);
+      size_t first_idx = row_begin + ((vx >> 3) & (ROW_SIZE - 1));
       size_t last_idx = row_begin + (((vx >> 3) + 1) & (ROW_SIZE - 1));
 
       auto first_iter = m_display.begin() + first_idx;

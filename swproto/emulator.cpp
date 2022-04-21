@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
 
   sf::RenderWindow window(
       sf::VideoMode(SCALING_FACTOR * statemachine::DISPLAY_WIDTH,
-                    SCALING_FACTOR * (statemachine::DISPLAY_HEIGHT + 1)),
+                    SCALING_FACTOR * statemachine::DISPLAY_HEIGHT),
       "CHIP8 Emulator");
 
   window.setFramerateLimit(60);
@@ -165,7 +165,10 @@ int main(int argc, char **argv) {
           update_keys(keystate, event);
         }
       }
-      if (machine.step(keystate, true) != statemachine::NO_ERROR) {
+
+      auto status = machine.step(keystate, i == 0 /* Only tick once. */);
+      if (status < 0) {
+        cerr << "machine reported error " << status << endl;
         window.close();
         ret = 1;
         break;
@@ -185,6 +188,7 @@ int main(int argc, char **argv) {
       }
     }
 
+    /*
     // Display pixel on bottom left if sound is "playing".
     if (machine.reg_ST()) {
       pixel.setPosition(0, statemachine::DISPLAY_HEIGHT * SCALING_FACTOR);
@@ -194,6 +198,7 @@ int main(int argc, char **argv) {
       pixel.setPosition(SCALING_FACTOR,
                         statemachine::DISPLAY_HEIGHT * SCALING_FACTOR);
     }
+    */
 
     window.display();
   }

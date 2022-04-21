@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <bitset>
 #include <functional>
 #include <gtest/gtest.h>
 #include <initializer_list>
@@ -16,6 +17,23 @@ std::string regs_of(const statemachine &mach) {
   }
 
   return reg_summary.str();
+}
+
+std::string
+disp_str(std::span<const uint8_t, statemachine::DISPLAY_SIZE> display) {
+  using namespace std;
+  stringstream ret;
+  ret << "display:\n";
+  for (unsigned row = 0; row < statemachine::DISPLAY_HEIGHT; ++row) {
+    cout << ' ';
+    for (unsigned row_offset = 0; row_offset < statemachine::ROW_SIZE;
+         ++row_offset) {
+      cout << bitset<8>(display[row * statemachine::ROW_SIZE + row_offset]);
+    }
+    cout << '\n';
+  }
+
+  return ret.str();
 }
 
 std::string mem_of(const statemachine &mach) {
@@ -276,9 +294,12 @@ TEST(StateMachineTest, Test8xy5) {
 
 TEST(StateMachineTest, Test8xy6) {
   { // Cases where VF should not be set.
+    //
+    // We choose immediates with 1's in most significant bit place to make we're
+    // the rightshifts aren't sign-extending.
     std::initializer_list<uint16_t> instructions{
-        0x6002, // LD V0 0x02
-        0x6104, // LD V1 0x04
+        0x6082, // LD V0 0x82
+        0x6184, // LD V1 0x84
         0x8016, // SHR V0, V1
     };
 
@@ -287,7 +308,7 @@ TEST(StateMachineTest, Test8xy6) {
       ASSERT_STEP(machine, 0, false);
       ASSERT_STEP(machine, 0, false);
       ASSERT_STEP(machine, 0, false);
-      ASSERT_EQ(machine.regs()[0x0], 1);
+      ASSERT_EQ(machine.regs()[0x0], 0x41);
       ASSERT_EQ(machine.regs()[0xF], 0);
     }
     { // Case without shift quirks.
@@ -295,14 +316,14 @@ TEST(StateMachineTest, Test8xy6) {
       ASSERT_STEP(machine, 0, false);
       ASSERT_STEP(machine, 0, false);
       ASSERT_STEP(machine, 0, false);
-      ASSERT_EQ(machine.regs()[0x0], 2);
+      ASSERT_EQ(machine.regs()[0x0], 0x42);
       ASSERT_EQ(machine.regs()[0xF], 0);
     }
   } // Cases where VF should be set.
   {
     std::initializer_list<uint16_t> instructions{
-        0x6003, // LD V0 0x03
-        0x6105, // LD V1 0x05
+        0x6083, // LD V0 0x83
+        0x6185, // LD V1 0x85
         0x8016, // SHR V0, V1
     };
 
@@ -311,7 +332,7 @@ TEST(StateMachineTest, Test8xy6) {
       ASSERT_STEP(machine, 0, false);
       ASSERT_STEP(machine, 0, false);
       ASSERT_STEP(machine, 0, false);
-      ASSERT_EQ(machine.regs()[0x0], 1);
+      ASSERT_EQ(machine.regs()[0x0], 0x41);
       ASSERT_EQ(machine.regs()[0xF], 1);
     }
     { // Case without shift quirks.
@@ -319,7 +340,7 @@ TEST(StateMachineTest, Test8xy6) {
       ASSERT_STEP(machine, 0, false);
       ASSERT_STEP(machine, 0, false);
       ASSERT_STEP(machine, 0, false);
-      ASSERT_EQ(machine.regs()[0x0], 2);
+      ASSERT_EQ(machine.regs()[0x0], 0x42);
       ASSERT_EQ(machine.regs()[0xF], 1);
     }
   }
@@ -712,4 +733,54 @@ TEST(StateMachineTest, TestCxkk) {
   auto machine_regs = machine.regs();
   ASSERT_TRUE(std::any_of(machine_regs.begin(), machine_regs.end(),
                           [&](auto x) { return x != machine_regs.front(); }));
+}
+
+TEST(StateMachineTest, Test00E0_Dxyn) {
+  std::initializer_list<uint16_t> instructions = {
+      // Some sample data to mess with.
+      0x0FF0, 0x8001,
+      0xD011, // DRW V0, V0, 1
+      0xD011, // DRW V0, V0, 1 (should undo previous instruction)
+      0x6002, // LD V0, 0x02
+      0xD011, // DRW V0, V1, 1
+      0x00E0, // CLS
+
+  };
+  statemachine machine(instructions, {.pc = 0x004});
+  {
+    auto display = machine.display();
+    ASSERT_TRUE(std::all_of(display.begin(), display.end(), is_zero));
+  }
+
+  {
+    ASSERT_STEP(machine, 0, 0); // Executes DRW V0, V1, 1
+    auto display = machine.display();
+    std::array<uint8_t, statemachine::DISPLAY_SIZE> expected_display{0x0F};
+    ASSERT_TRUE(
+        std::equal(display.begin(), display.end(), expected_display.begin()))
+        << disp_str(display);
+    ASSERT_FALSE(machine.regs()[0xF]);
+  }
+  {
+    ASSERT_STEP(machine, 0, 0); // Executes DRW V0, V1, 1
+    auto display = machine.display();
+    ASSERT_TRUE(std::all_of(display.begin(), display.end(), is_zero));
+    ASSERT_TRUE(machine.regs()[0xF]);
+  }
+  {
+    ASSERT_STEP(machine, 0, 0); // Executes LD V0, 0x02
+    ASSERT_STEP(machine, 0, 0); // Executes DRW V0, V1, 1
+    auto display = machine.display();
+    std::array<uint8_t, statemachine::DISPLAY_SIZE> expected_display{
+        0b00000011, 0b11000000};
+    ASSERT_TRUE(
+        std::equal(display.begin(), display.end(), expected_display.begin()))
+        << disp_str(display);
+    ASSERT_FALSE(machine.regs()[0xf]);
+  }
+  {
+    ASSERT_STEP(machine, 0, 0); // Executes CLS
+    auto display = machine.display();
+    ASSERT_TRUE(std::all_of(display.begin(), display.end(), is_zero));
+  }
 }
