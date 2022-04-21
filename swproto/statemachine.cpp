@@ -324,11 +324,17 @@ statemachine::status statemachine::step(uint16_t keystate, bool tick) {
       for (unsigned i = 0; i <= x; ++i) {
         m_mem[(m_reg_I + i) & 0xFFF] = m_regs.at(i);
       }
+      if (!m_quirk_load_store) {
+        m_reg_I += x + 1;
+      }
     } break;
 
     case 0x65: {
       for (unsigned i = 0; i <= x; ++i) {
         m_regs[i] = m_mem.at((m_reg_I + i) & 0xFFF);
+      }
+      if (!m_quirk_load_store) {
+        m_reg_I += x + 1;
       }
     } break;
     default:

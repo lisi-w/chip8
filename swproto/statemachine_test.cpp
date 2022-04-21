@@ -570,77 +570,110 @@ TEST(StateMachineTest, TestFx33) {
 
 TEST(StateMachineTest, TestFx55) {
   std::initializer_list<uint16_t> instructions = {
-      // Fill all the registers with random bytes masked with DB.
-      0xC0DB, 0xC1DB, 0xC2DB, 0xC3DB, 0xC4DB, 0xC5DB, 0xC6DB, 0xC7DB,
-      0xC8DB, 0xC9DB, 0xCADB, 0xCBDB, 0xCCDB, 0xCDDB, 0xCEDB, 0xCFDB,
+      // Fill all the registers with random bytes
+      0xC0FF, 0xC1FF, 0xC2FF, 0xC3FF, 0xC4FF, 0xC5FF, 0xC6FF, 0xC7FF,
+      0xC8FF, 0xC9FF, 0xCAFF, 0xCBFF, 0xCCFF, 0xCDFF, 0xCEFF, 0xCFFF,
       0xAE00, // LD I, 0xE00
       0xF755, // LD [I], V7
-      0xAF00, // LD I, 0xF00
+      0xAE00, // LD I, 0xE00
       0xFF55, // LD [I], VF
   };
-  statemachine machine(instructions);
 
-  for (unsigned i = 0; i < instructions.size(); ++i) {
-    ASSERT_STEP(machine, 0, false);
+  for (int quirk_load_store = 0; quirk_load_store <= 1; ++quirk_load_store) {
+    statemachine machine(instructions,
+                         {.quirk_load_store = !!quirk_load_store});
+
+    // Execute first 16 ops (that fill up V0..VF with randomness).
+    for (unsigned i = 0; i < 16; ++i) {
+      ASSERT_STEP(machine, 0, false);
+    }
+
+    std::array<uint8_t, 16> random_bytes;
+    std::copy_n(machine.regs().begin(), 16, random_bytes.begin());
+
+    auto mem = machine.memory();
+    auto mem_random_begin = mem.begin() + 0xE00;
+
+    ASSERT_STEP(machine, 0, false); // Executes LD I, 0xE00
+    ASSERT_STEP(machine, 0, false); // Executes LD [I], V7
+
+    if (quirk_load_store) {
+      ASSERT_EQ(machine.reg_I(), 0xE00);
+    } else {
+      ASSERT_EQ(machine.reg_I(), 0xE08);
+    }
+
+    // Make sure that V0..V7 matches mem[0xE00]..mem[0xE07].
+    ASSERT_TRUE(
+        equal(random_bytes.begin(), random_bytes.begin() + 8, mem_random_begin))
+        << mem_of(machine);
+    // Make sure that 0xE08..0xFFF is empty.
+    ASSERT_TRUE(std::all_of(mem_random_begin + 8, mem.end(), is_zero))
+        << mem_of(machine);
+
+    ASSERT_STEP(machine, 0, false); // Executes LD I, 0xE00
+    ASSERT_STEP(machine, 0, false); // Executes LD [I], VF
+
+    // Make sure that V0..VF matches mem[0xE00]..mem[0xE0F].
+    ASSERT_TRUE(
+        equal(random_bytes.begin(), random_bytes.end(), mem_random_begin))
+        << mem_of(machine);
+    // Make sure that mem[0xE0F]..mem[0xFFF] is empty.
+    ASSERT_TRUE(std::all_of(mem_random_begin + 16, mem.end(), is_zero))
+        << mem_of(machine);
+
+    // Make sure register contents untouched.
+    ASSERT_TRUE(equal(random_bytes.begin(), random_bytes.end(),
+                      machine.regs().begin()));
   }
-
-  auto machine_regs = machine.regs();
-  auto machine_mem = machine.memory();
-
-  auto mem_instructions_end = machine_mem.begin() + instructions.size() * 2;
-  auto mem_V0_V7_begin = machine_mem.begin() + 0xE00;
-  auto mem_V0_V7_end = machine_mem.begin() + (0xE07 + 1);
-  auto mem_V0_VF_begin = machine_mem.begin() + 0xF00;
-  auto mem_V0_VF_end = machine_mem.begin() + (0xF0F + 1);
-
-  // Make sure that everything between the end of the instructions
-  // and 0xDFF (inclusive) is 0.
-  ASSERT_TRUE(std::all_of(mem_instructions_end, mem_V0_V7_begin, is_zero))
-      << mem_of(machine);
-  // Make sure that V0..V7 matches 0xE00..0xE07.
-  ASSERT_TRUE(equal(mem_V0_V7_begin, mem_V0_V7_end, machine_regs.begin()))
-      << mem_of(machine);
-  // Make sure that 0xE08..0xDFF is empty.
-  ASSERT_TRUE(std::all_of(mem_V0_V7_end, mem_V0_VF_begin, is_zero))
-      << mem_of(machine);
-  // Make sure that V0..VF matches 0xF00..0xF10.
-  ASSERT_TRUE(equal(mem_V0_VF_begin, mem_V0_VF_end, machine_regs.begin()))
-      << mem_of(machine);
-  // Make sure that 0xF10..0xFFF is empty.
-  ASSERT_TRUE(std::all_of(mem_V0_VF_end, machine_mem.end(), is_zero))
-      << mem_of(machine);
 }
 
 TEST(StateMachineTest, TestFx65) {
   std::initializer_list<uint16_t> instructions = {
       // Nonsense will begin 4 instructions from now.
-      0xA006, // LD I, 0x006
+      0xA008, // LD I, 0x008
       0xF765, // LD V7, [I]
+      0xA008, // LD I, 0x008
       0xFF65, // LD VF, [I]
       // Fill 16 bytes with nonsense.
-      0xDEAD, 0xBEEF, 0x000F, 0xF1CE, 0xC0DE, 0xFACE, 0xFEED, 0xF00D};
+      0xDEAD, 0xBEEF, 0xF00D, 0xF1CE, 0xC0DE, 0xFACE, 0xFEED, 0xF00D};
 
-  statemachine machine(instructions);
+  for (int quirk_load_store = 0; quirk_load_store <= 1; ++quirk_load_store) {
+    statemachine machine(instructions,
+                         {.quirk_load_store = !!quirk_load_store});
 
-  auto machine_regs = machine.regs();
-  auto machine_mem = machine.memory();
-  auto reg_V8_begin = machine_regs.begin() + 8;
-  auto nonsense_begin = machine_mem.begin() + 0x006;
+    ASSERT_STEP(machine, 0, false); // Executes LD I, 0x006
+    ASSERT_STEP(machine, 0, false); // Executes LD V7, [0x006]
 
-  ASSERT_STEP(machine, 0, false); // Executes LD V7, [0x006]
-  ASSERT_STEP(machine, 0, false); // Executes LD V7, [0x006]
+    if (quirk_load_store) {
+      ASSERT_EQ(machine.reg_I(), 0x008);
+    } else {
+      ASSERT_EQ(machine.reg_I(), 0x008 + 7 + 1);
+    }
 
-  // Make sure V0..V7 contains the first 8 bytes of nonsense.
-  ASSERT_TRUE(equal(machine_regs.begin(), reg_V8_begin, nonsense_begin))
-      << regs_of(machine);
-  // Make sure V8..VF is still zero's.
-  ASSERT_TRUE(std::all_of(reg_V8_begin, machine_regs.end(), is_zero))
-      << regs_of(machine);
+    {
+      // Make sure V0..V7 contains the first 8 bytes of nonsense
+      // and that the remainder are empty.
+      std::array<uint8_t, 16> expected_regs{0xDE, 0xAD, 0xBE, 0xEF,
+                                            0xF0, 0x0D, 0xF1, 0xCE};
+      ASSERT_TRUE(equal(expected_regs.begin(), expected_regs.end(),
+                        machine.regs().begin()))
+          << regs_of(machine);
+    }
 
-  ASSERT_STEP(machine, 0, false); // Executes LD VF, [0x006]
-  // Now make sure the regs are completely filled up with nonsense.
-  ASSERT_TRUE(equal(machine_regs.begin(), machine_regs.end(), nonsense_begin))
-      << regs_of(machine);
+    ASSERT_STEP(machine, 0, false); // Executes LD I, 0x006
+    ASSERT_STEP(machine, 0, false); // Executes LD VF, [0x006]
+    {
+      // Make sure all the regs are the same nonsense.
+      std::array<uint8_t, 16> expected_regs{0xDE, 0xAD, 0xBE, 0xEF, 0xF0, 0x0D,
+                                            0xF1, 0xCE, 0xC0, 0xDE, 0xFA, 0xCE,
+                                            0xFE, 0xED, 0xF0, 0x0D};
+      // Now make sure the regs are completely filled up with nonsense.
+      ASSERT_TRUE(equal(expected_regs.begin(), expected_regs.end(),
+                        machine.regs().begin()))
+          << regs_of(machine);
+    }
+  }
 }
 
 TEST(StateMachineTest, TestCxkk) {

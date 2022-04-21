@@ -32,8 +32,6 @@ public:
     PC_UNALIGNED = -7,
   };
 
-  enum quirks { SHIFT = 1, LOAD_STORE = 2 };
-
   struct init_conf {
     uint16_t pc;
     uint16_t font_begin;
