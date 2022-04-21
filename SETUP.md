@@ -16,3 +16,10 @@ echo "build/" >> .git/info/exclude
 git submodule init
 git submodule update
 ```
+
+You'll also want to install SFML to run the emulator. On Debian
+and other systems, this is usually just an apt-get away:
+```
+apt update
+apt install libsfml-dev
+```
