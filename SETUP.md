@@ -13,4 +13,6 @@ make -j`nproc`
 cd ..
 ln -s build/compile_commands.json
 echo "build/" >> .git/info/exclude
+git submodule init
+git submodule update
 ```
