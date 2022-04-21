@@ -3,7 +3,6 @@
 #include <cassert>
 #include <cstddef>
 #include <iomanip>
-#include <iostream> // TODO: REMOVE
 #include <mutex>
 #include <random>
 #include <vector>
