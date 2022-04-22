@@ -16,6 +16,7 @@ public:
   const static unsigned ROW_SIZE = DISPLAY_WIDTH / 8;
   const static unsigned DISPLAY_HEIGHT = 32;
   const static unsigned ROW_MASK = DISPLAY_HEIGHT - 1;
+  const static unsigned ROW_OFFSET_MASK = ROW_SIZE - 1;
   const static unsigned DISPLAY_SIZE = ROW_SIZE * DISPLAY_HEIGHT;
   const static unsigned PROG_BEGIN = 0x200;
 
@@ -27,12 +28,11 @@ public:
     WAITING_FOR_KEYPRESS = 2,
     POPPED_EMPTY_STACK = -2,
     PUSHED_FULL_STACK = -3,
-    VFRACE = -4,
     MEMORY_OVERFLOW = -5,
-    DISPLAY_OVERFLOW = -6,
     IMPOSSIBLE_KEYPRESS_REQUEST = -6,
     PC_UNALIGNED = -7,
-    DEBUG_ERROR = -8, // Thrown for testing purposes.
+    PC_OUT_OF_RANGE = -8,
+    DEBUG_ERROR = -100, // Thrown for testing purposes.
   };
 
   struct init_conf {

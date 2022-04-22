@@ -744,6 +744,7 @@ TEST(StateMachineTest, Test00E0_Dxyn) {
       0x6002, // LD V0, 0x02
       0xD011, // DRW V0, V1, 1
       0x00E0, // CLS
+      0x6035, // LD V0, 0x3A (58)
 
   };
   statemachine machine(instructions, {.pc = 0x004});
@@ -780,6 +781,11 @@ TEST(StateMachineTest, Test00E0_Dxyn) {
   }
   {
     ASSERT_STEP(machine, 0, 0); // Executes CLS
+    auto display = machine.display();
+    ASSERT_TRUE(std::all_of(display.begin(), display.end(), is_zero));
+  }
+  {
+    ASSERT_STEP(machine, 0, 0); // Executes LDs.
     auto display = machine.display();
     ASSERT_TRUE(std::all_of(display.begin(), display.end(), is_zero));
   }

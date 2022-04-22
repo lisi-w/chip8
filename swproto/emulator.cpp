@@ -15,6 +15,20 @@
 
 const size_t SCALING_FACTOR = 1700 / statemachine::DISPLAY_WIDTH;
 
+std::string mem_of(const statemachine &mach) {
+  using namespace std;
+  stringstream mem_str;
+  mem_str << "mem:";
+  unsigned i = 0;
+  for (uint8_t val : mach.memory()) {
+    if ((i++ % 32) == 0) {
+      mem_str << "\n  ";
+    }
+    mem_str << hex << setw(2) << setfill('0') << (int)val << " ";
+  }
+  return mem_str.str();
+}
+
 /// Reads file contents into CHIP8 memory and places fonts starting at 0x000.
 std::optional<std::array<uint8_t, statemachine::MEMORY_SIZE>>
 try_load(std::string path) {
@@ -137,7 +151,12 @@ int main(int argc, char **argv) {
     cerr << "Failed to open " << path << endl;
     return 1;
   }
-  statemachine machine(*possible_mem, {.pc = 0x200, .font_begin = 0x000});
+
+  statemachine machine(*possible_mem, {
+                                          .pc = 0x200,
+                                          .font_begin = 0x000,
+                                      });
+  cout << mem_of(machine) << endl;
 
   cout << "Successfully loaded " << argv[1] << '\n';
 
