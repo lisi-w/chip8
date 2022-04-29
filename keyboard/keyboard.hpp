@@ -21,9 +21,22 @@ struct usb_keyboard_packet {
 	      uint8_t keycode[6];
 };
 
-/* Find and open a USB keyboard device.  Argument should point to
- *    space to store an endpoint address.  Returns NULL if no keyboard
- *       device was found. */
-extern struct libusb_device_handle *openkeyboard(uint8_t *);
 
+class Keyboard {
+
+	private:
+		struct libusb_device_handle *keyboard;
+
+	public:
+		struct keys {
+			int error;
+			bool up : 0, down : 0, left : 0, right : 0;
+			bool escape : 0, enter : 0;
+			char keypad;
+		};
+		Keyboard();
+		~Keyboard();
+		bool find_keyboard();
+		keys get_keys();
+};
 #endif
