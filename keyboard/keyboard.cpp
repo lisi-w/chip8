@@ -73,70 +73,111 @@ bool Keyboard::find_keyboard() {
 		return true;
 }
 
-Keyboard::keys Keyboard::get_keys(struct usb_keyboard_packet packet) {
-	/* maps keyboard to chip8 keys as follows:
-	 * 1 2 3 4        1 2 3 C
-	 * q w e r        4 5 6 D
-	 * a s d f  --->  7 8 9 E
-	 * z x c v        A 0 B F
-	*/
+Keyboard::keys Keyboard::get_keys() {
 	keys pressed_keys;
-        
-	switch (packet.keycode[0]) {
-		case 0x1E :
-			pressed_keys.keypad = '1';
-		case 0x1F :
-			pressed_keys.keypad = '2';
-		case 0x20 :
-			pressed_keys.keypad = '3';
-		case 0x21 :
-			pressed_keys.keypad =  'C';
-		case 0x14 :
-			pressed_keys.keypad = '4';
-		case 0x1A :
-			pressed_keys.keypad = '5';
-		case 0x08 :
-			pressed_keys.keypad = '6';
-		case 0x15 :
-			pressed_keys.keypad = 'D';
-		case 0x04 :
-			pressed_keys.keypad = '7';
-		case 0x16 :
-			pressed_keys.keypad = '8';
-		case 0x07 :
-			pressed_keys.keypad = '9';
-		case 0x09 :
-			pressed_keys.keypad = 'E';
-		case 0x1D :
-			pressed_keys.keypad = 'A';
-		case 0x1B :
-			pressed_keys.keypad = '0';
-		case 0x06 :
-			pressed_keys.keypad = 'B';
-		case 0x19 :
-			pressed_keys.keypad = 'F';
-		default :
-			pressed_keys.keypad = NULL;
-	}
+	libusb_interrupt_transfer(keyboard, endpoint_address,
+                              (unsigned char *) &packet, sizeof(packet),
+                              &transferred, 0);
+	uint16_t keypad;
+    	if (transferred == sizeof(packet)) {
+		for (int i = 0; i < 6; i++) {
 
-	if (packet.keycode[0] == ESC) { /* ESC pressed? */
-		pressed_keys.escape = 1;
+			/* maps keyboard to chip8 keys as follows:
+			 * 1 2 3 4        1 2 3 C
+			 * q w e r        4 5 6 D
+			 * a s d f  --->  7 8 9 E
+			 * z x c v        A 0 B F
+			*/
+			switch (packet.keycode[i]) {
+				case 0x1E :
+					keypad = 1 << 0x1;
+					break;
+				case 0x1F :
+					keypad = 1 << 0x2;
+					break;
+				case 0x20 :
+					keypad = 1 << 0x3;
+					break;
+				case 0x21 :
+					keypad =  1 << 0xC;
+					break;
+				case 0x14 :
+					keypad = 1 << 0x4;
+					break;
+				case 0x1A :
+					keypad = 1 << 0x5;
+					break;
+				case 0x08 :
+					keypad = 1 << 0x6;
+					break;
+				case 0x15 :
+					keypad = 1 << 0xD;
+					break;
+				case 0x04 :
+					keypad = 1 << 0x7;
+					break;
+				case 0x16 :
+					keypad = 1 << 0x8;
+					break;
+				case 0x07 :
+					keypad = 1 << 0x9;
+					break;
+				case 0x09 :
+					keypad = 1 << 0xE;
+					break;
+				case 0x1D :
+					keypad = 1 << 0xA;
+					break;
+				case 0x1B :
+					keypad = 1 << 0x0;
+					break;
+				case 0x06 :
+					keypad = 1 << 0xB;
+					break;
+				case 0x19 :
+					keypad = 1 << 0xF;
+					break;
+				case ESC : 
+					pressed_keys.escape = 1;
+					break;
+				case ENTER :
+					pressed_keys.enter = 1;
+					break;
+				case LEFT :
+					pressed_keys.left = 1;
+					break;
+				case RIGHT :
+					pressed_keys.right = 1;
+					break;
+				case UP :
+					pressed_keys.up = 1;
+					break;
+				case DOWN :
+					pressed_keys.down = 1;
+					break;
+				case FIVE :
+					pressed_keys.game1 = 1;
+					break;
+				case SIX :
+					pressed_keys.game2 = 1;
+					break;
+				case SEVEN :
+					pressed_keys.game3 = 1;
+					break;
+				case EIGHT :
+					pressed_keys.game4 = 1;
+					break;
+				case NINE :
+					pressed_keys.game5 = 1;
+					break;
+				case ZERO :
+					pressed_keys.game6 = 1;
+					break;
+				default :
+					if !(keypad) keypad = 0;
+			}
+		}
 	}
-	else if (packet.keycode[0] == 0) pressed_keys.escape = NULL;
-	else if (packet.keycode[0] == ENTER) {
-		pressed_keys.enter = 1;
-	}
-	else if (packet.keycode[0] == LEFT) {
-		pressed_keys.left = 1;
-	}
-	else if (packet.keycode[0] == RIGHT) {
-		pressed_keys.right = 1;
-	}
-	else if (packet.keycode[0] == UP) {
-		pressed_keys.up = 1;
-	}
-	else if (packet.keycode[0] == DOWN) {
-		pressed_keys.down = 1;
-	}
+	pressed_keys.keypad = keypad;
 	return pressed_keys;
-}	
+}

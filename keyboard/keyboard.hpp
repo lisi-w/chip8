@@ -32,7 +32,8 @@ class Keyboard {
 			int error;
 			bool up : 0, down : 0, left : 0, right : 0;
 			bool escape : 0, enter : 0;
-			char keypad;
+			bool game1 : 0, game2 : 0, game3 : 0, game4 : 0, game5 : 0, game6 : 0;
+			uint16_t keypad;
 		};
 		Keyboard();
 		~Keyboard();
