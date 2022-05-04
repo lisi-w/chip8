@@ -11,6 +11,13 @@
 #define UP 0x52
 #define DOWN 0x51
 
+#define FIVE 0x22
+#define SIX 0x23
+#define SEVEN 0x24
+#define EIGHT 0x25
+#define NINE 0x26
+#define ZERO 0x27
+
 Keyboard::Keyboard(uint8_t *endpoint_addr) {
 	struct libusb_device_handle *keyboard = NULL;
 	uint8_t *endpoint_address = endpoint_addr;
@@ -174,7 +181,7 @@ Keyboard::keys Keyboard::get_keys() {
 					pressed_keys.game6 = 1;
 					break;
 				default :
-					if !(keypad) keypad = 0;
+					if (!keypad) keypad = 0;
 			}
 		}
 	}
