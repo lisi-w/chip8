@@ -30,9 +30,9 @@ class Keyboard {
 	public:
 		struct keys {
 			int error;
-			bool up : 0, down : 0, left : 0, right : 0;
-			bool escape : 0, enter : 0;
-			bool game1 : 0, game2 : 0, game3 : 0, game4 : 0, game5 : 0, game6 : 0;
+			bool up : 1, down : 1, left : 1, right : 1;
+			bool escape : 1, enter : 1;
+			bool game1 : 1, game2 : 1, game3 : 1, game4 : 1, game5 : 1, game6 : 1;
 			uint16_t keypad;
 		};
 		Keyboard();

@@ -18,11 +18,11 @@
 #define NINE 0x26
 #define ZERO 0x27
 
-Keyboard::Keyboard(uint8_t *endpoint_addr) {
+Keyboard::Keyboard() {
 	struct libusb_device_handle *keyboard = NULL;
-	uint8_t *endpoint_address = endpoint_addr;
+	uint8_t endpoint_addr;
+	uint8_t *endpoint_address = &endpoint_addr;
 }
-Keyboard::~Keyboard();
 
 bool Keyboard::find_keyboard() {
 	libusb_device **devs;
@@ -69,7 +69,7 @@ bool Keyboard::find_keyboard() {
 							// std::cerr << "Error: libusb_claim_interface failed: %d\n", r;
 							return false;
 						}	
-						*endpoint_address = inter->endpoint[0].bEndpointAddress;
+						Keyboard::endpoint_addr = inter->endpoint[0].bEndpointAddress;
 						goto found;
 					}
 				}
@@ -82,7 +82,10 @@ bool Keyboard::find_keyboard() {
 
 Keyboard::keys Keyboard::get_keys() {
 	keys pressed_keys;
-	libusb_interrupt_transfer(keyboard, endpoint_address,
+	struct usb_keyboard_packet packet;
+  	int transferred;
+
+	libusb_interrupt_transfer(keyboard, Keyboard::endpoint_addr,
                               (unsigned char *) &packet, sizeof(packet),
                               &transferred, 0);
 	uint16_t keypad;

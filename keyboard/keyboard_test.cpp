@@ -15,10 +15,6 @@ uint8_t endpoint_address;
 int main()
 {
 
-  struct usb_keyboard_packet packet;
-  int transferred;
-  char ascii_char;
-
   /* Open the keyboard */
   keyboard = Keyboard.keyboard;
   if (!keyboard.find_keyboard()) {
