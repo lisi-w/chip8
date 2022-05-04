@@ -26,6 +26,8 @@ class Keyboard {
 
 	private:
 		struct libusb_device_handle *keyboard;
+		uint8_t endpoint_addr;
+		uint8_t endpoint_address = &endpoint_addr;
 
 	public:
 		struct keys {
