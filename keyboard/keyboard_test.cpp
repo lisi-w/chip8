@@ -20,40 +20,17 @@ int main()
   char ascii_char;
 
   /* Open the keyboard */
-  if (!Keyboard(&endpoint_address)) {
+  keyboard = Keyboard.keyboard;
+  if (!keyboard.find_keyboard()) {
     std::cerr << "Did not find a keyboard\n";
     exit(1);
   }
-  keyboard = Keyboard.keyboard;
   std::cout << "Keyboard initialized\n";
     
   /* Look for and handle keypresses */
   for (;;) {
-    libusb_interrupt_transfer(keyboard, endpoint_address,
-			      (unsigned char *) &packet, sizeof(packet),
-			      &transferred, 0);
-    if (transferred == sizeof(packet)) {
-      uint16_t ctrl = get_control_keys(packet);
-      if (ctrl == NULL)  { 
-	      char key = get_keys(packet);
-	      // send key to game as input
-	      std::cout << "other input pressed\n";
-      }
-      else if (ctrl == ESC)
-	break;
-      else if (ctrl == ENTER) {
-	      // select game
-	      std::cout << "select pressed\n";
-      }
-      else if (ctrl == LEFT) {
-	      // move for game selection
-	      std::cout << "left pressed\n";
-      }
-      else if (ctrl == RIGHT) {
-	      // move for game selection
-	      std::cout << "right pressed\n";
-      }
-    }
+	keyboard.keys = keyboard.get_keys()
+	std::cout << "%d" << keyboard.keys.keypad;
   }
 
   return 0;

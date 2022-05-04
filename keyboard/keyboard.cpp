@@ -25,12 +25,12 @@ bool Keyboard::find_keyboard() {
 
 	/* Start the library */
 	if ( libusb_init(NULL) < 0 ) {
-		std::cerr << "Error: libusb_init failed\n";
+		// std::cerr << "Error: libusb_init failed\n";
 		return false;
 	}
 	/* Enumerate all the attached USB devices */
 	if ( (num_devs = libusb_get_device_list(NULL, &devs)) < 0 ) {
-		std::cerr << "Error: libusb_get_device_list failed\n";
+		// std::cerr << "Error: libusb_get_device_list failed\n";
 		return false;
 	}
 	/* Look at each device, remembering the first HID device that speaks
@@ -38,7 +38,7 @@ bool Keyboard::find_keyboard() {
 	for (d = 0 ; d < num_devs ; d++) {
 		libusb_device *dev = devs[d];
 		if ( libusb_get_device_descriptor(dev, &desc) < 0 ) {
-			std::cerr << "Error: libusb_get_device_descriptor failed\n";
+			// std::cerr << "Error: libusb_get_device_descriptor failed\n";
 			return false;
 		}
 		if (desc.bDeviceClass == LIBUSB_CLASS_PER_INTERFACE) {
@@ -52,14 +52,14 @@ bool Keyboard::find_keyboard() {
 						inter->bInterfaceProtocol == USB_HID_KEYBOARD_PROTOCOL) {
 						int r;
 						if ((r = libusb_open(dev, &keyboard)) != 0) {
-							std::cerr << "Error: libusb_open failed: %d\n", r;
+							// std::cerr << "Error: libusb_open failed: %d\n", r;
 							return false;
 						}
 						if (libusb_kernel_driver_active(keyboard,i))
 							libusb_detach_kernel_driver(keyboard, i);
 						libusb_set_auto_detach_kernel_driver(keyboard, i);
 						if ((r = libusb_claim_interface(keyboard, i)) != 0) {
-							std::cerr << "Error: libusb_claim_interface failed: %d\n", r;
+							// std::cerr << "Error: libusb_claim_interface failed: %d\n", r;
 							return false;
 						}	
 						*endpoint_address = inter->endpoint[0].bEndpointAddress;

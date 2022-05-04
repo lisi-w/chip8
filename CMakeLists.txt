@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.20)
+cmake_minimum_required (VERSION 3.16)
 project (yachip8 C CXX)
 
 if (MSVC)
@@ -10,5 +10,5 @@ else()
 endif()
 
 
-add_subdirectory (swimp)
+add_subdirectory (keyboard)
 
