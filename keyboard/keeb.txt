@@ -1,4 +1,0 @@
-NOTES for keyboard stuff
-
-double check syntax matches c++
-test with board using smth like fbputchar.c or have it beep(?) 
