@@ -1,7 +1,22 @@
 cmake_minimum_required (VERSION 3.20)
 project (yachip8 C CXX)
+SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_STANDARD 20)
 
-# GoogleTest snippet stolen from https://cmake.org/cmake/help/latest/module/FetchContent.html
+cmake_host_system_information(RESULT HNAME QUERY HOSTNAME)
+
+if ("${HNAME}" STREQUAL "de1-soc")
+  set(ISDE1SOC ON CACHE BOOL "Are we running on FPGA or desktop?")
+  message(STATUS "Detected running on FPGA; not compiling tests.")
+else()
+  set(ISDE1SOC OFF CACHE BOOL "Are we running on FPGA or desktop?")
+  message(STATUS "Detected running on desktop.")
+endif()
+
+set(COMPILE_SWPROTO OFF CACHE BOOL "Compile software prototype and tests.")
+
+# GoogleTest snippet stolen from
+# https://cmake.org/cmake/help/latest/module/FetchContent.html
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -10,16 +25,22 @@ FetchContent_Declare(
 )
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
+# FetchContent_MakeAvailable is to be set in subdirs as needed.
 
-if (MSVC)
-    # warning level 4 and all warnings as errors
-    add_compile_options(/W4 /WX)
-else()
-    # lots of warnings and all warnings as errors
-    add_compile_options(-Wall -Wextra -pedantic -Werror -Wno-unused -Wno-missing-field-initializers)
+set(WARNING_LIST
+  -Wall
+  -Wextra
+  -pedantic
+  -Werror
+  -Wno-unused
+  -Wno-missing-field-initializers
+)
+string(REPLACE ";" " " WARNING_FLAGS "${WARNING_LIST}")
+
+if (COMPILE_SWPROTO)
+  add_subdirectory (swproto)
 endif()
 
-
-add_subdirectory (swproto)
+# add_subdirectory (sw)
+add_subdirectory (hw)
 

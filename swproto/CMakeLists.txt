@@ -1,3 +1,5 @@
+FetchContent_MakeAvailable(googletest)
+
 find_package(SFML COMPONENTS graphics REQUIRED)
 
 set(SWPROTO_LIBRARY_SOURCES statemachine.cpp statemachine.hpp font.cpp font.hpp)
