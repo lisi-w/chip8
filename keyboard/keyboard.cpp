@@ -22,6 +22,20 @@ Keyboard::Keyboard() {
 	struct libusb_device_handle *keyboard = NULL;
 	uint8_t endpoint_addr;
 	uint8_t *endpoint_address = &endpoint_addr;
+	keys pressed_keys;
+	pressed_keys.error = 0;
+	pressed_keys.up = 0;
+	pressed_keys.down = 0;
+	pressed_keys.left = 0;
+	pressed_keys.right = 0;
+	pressed_keys.escape = 0;
+	pressed_keys.enter = 0;
+        pressed_keys.game1 = 0;
+        pressed_keys.game2 = 0;
+        pressed_keys.game3 = 0;
+        pressed_keys.game4 = 0;
+        pressed_keys.game5 = 0;
+        pressed_keys.game6 = 0;
 }
 
 bool Keyboard::find_keyboard() {
@@ -80,8 +94,7 @@ bool Keyboard::find_keyboard() {
 		return true;
 }
 
-Keyboard::keys Keyboard::get_keys() {
-	keys pressed_keys;
+void Keyboard::get_keys() {
 	struct usb_keyboard_packet packet;
   	int transferred;
 
@@ -148,46 +161,45 @@ Keyboard::keys Keyboard::get_keys() {
 					keypad = 1 << 0xF;
 					break;
 				case ESC : 
-					pressed_keys.escape = 1;
+					Keyboard::pressed_keys.escape = 1;
 					break;
 				case ENTER :
-					pressed_keys.enter = 1;
+					Keyboard::pressed_keys.enter = 1;
 					break;
 				case LEFT :
-					pressed_keys.left = 1;
+					Keyboard::pressed_keys.left = 1;
 					break;
 				case RIGHT :
-					pressed_keys.right = 1;
+					Keyboard::pressed_keys.right = 1;
 					break;
 				case UP :
-					pressed_keys.up = 1;
+					Keyboard::pressed_keys.up = 1;
 					break;
 				case DOWN :
-					pressed_keys.down = 1;
+					Keyboard::pressed_keys.down = 1;
 					break;
 				case FIVE :
-					pressed_keys.game1 = 1;
+					Keyboard::pressed_keys.game1 = 1;
 					break;
 				case SIX :
-					pressed_keys.game2 = 1;
+					Keyboard::pressed_keys.game2 = 1;
 					break;
 				case SEVEN :
-					pressed_keys.game3 = 1;
+					Keyboard::pressed_keys.game3 = 1;
 					break;
 				case EIGHT :
-					pressed_keys.game4 = 1;
+					Keyboard::pressed_keys.game4 = 1;
 					break;
 				case NINE :
-					pressed_keys.game5 = 1;
+					Keyboard::pressed_keys.game5 = 1;
 					break;
 				case ZERO :
-					pressed_keys.game6 = 1;
+					Keyboard::pressed_keys.game6 = 1;
 					break;
 				default :
 					if (!keypad) keypad = 0;
 			}
 		}
 	}
-	pressed_keys.keypad = keypad;
-	return pressed_keys;
+	Keyboard::pressed_keys.keypad = keypad;
 }

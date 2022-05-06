@@ -8,7 +8,6 @@
 #define LEFT 0x50
 #define RIGHT 0x4F
 
-struct libusb_device_handle *keyboard;
 uint8_t endpoint_address;
 
 
@@ -16,8 +15,8 @@ int main()
 {
 
   /* Open the keyboard */
-  keyboard = Keyboard.keyboard;
-  if (!keyboard.find_keyboard()) {
+  Keyboard keyboard_obj;
+  if (!keyboard_obj.find_keyboard()) {
     std::cerr << "Did not find a keyboard\n";
     exit(1);
   }
@@ -25,8 +24,8 @@ int main()
     
   /* Look for and handle keypresses */
   for (;;) {
-	keyboard.keys = keyboard.get_keys()
-	std::cout << "%d" << keyboard.keys.keypad;
+	keyboard_obj.get_keys();
+	std::cout << "%d" << keyboard_obj.pressed_keys.keypad;
   }
 
   return 0;

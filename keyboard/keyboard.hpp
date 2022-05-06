@@ -37,9 +37,10 @@ class Keyboard {
 			bool game1 : 1, game2 : 1, game3 : 1, game4 : 1, game5 : 1, game6 : 1;
 			uint16_t keypad;
 		};
+		keys pressed_keys;
 		Keyboard();
 		~Keyboard();
 		bool find_keyboard();
-		keys get_keys();
+		void get_keys();
 };
 #endif
