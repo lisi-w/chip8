@@ -26,10 +26,17 @@ protected:
   const testing::TestInfo *const test_info =
       testing::UnitTest::GetInstance()->current_test_info();
 
+  std::string get_tf_name() {
+    std::stringstream name;
+    name << TRACE_DIR << test_info->test_suite_name() << '_'
+         << test_info->name() << ".vcd";
+    return name.str();
+  }
+
   VTest() : dut{}, tf{}, time{0} {
     dut.final();
     dut.trace(&tf, 99);
-    const auto tf_name = std::string(TRACE_DIR) + test_info->name() + ".vcd";
+    auto tf_name = get_tf_name();
     tf.open(tf_name.c_str());
     if (!tf.isOpen()) {
       std::cerr << "Failed to open " + tf_name + "; aborting.\n";
