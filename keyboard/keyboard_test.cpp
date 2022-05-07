@@ -1,6 +1,6 @@
-#include <iostream>
+#include "keyboard.hpp"
 #include <cstdlib>
-#include "keyboard.cpp"
+#include <iostream>
 
 #define ENTER 0x28
 #define ESC 0x29
@@ -10,9 +10,7 @@
 
 uint8_t endpoint_address;
 
-
-int main()
-{
+int main() {
 
   /* Open the keyboard */
   Keyboard keyboard_obj;
@@ -21,14 +19,13 @@ int main()
     exit(1);
   }
   std::cout << "Keyboard initialized\n";
-    
+
   /* Look for and handle keypresses */
   for (;;) {
-	keyboard_obj.get_keys();
-	std::cout << "%d" << keyboard_obj.pressed_keys.keypad;
+    auto keys = keyboard_obj.get_keys();
+    std::cout << (int)keys.keypad << std::endl;
   }
 
   return 0;
 }
-
 
