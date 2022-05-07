@@ -1,0 +1,3 @@
+DEBUG NOTE
+
+check how lab2 initialized the libusb handle - invalid read on line 88 of get_keys -- uninitialized value

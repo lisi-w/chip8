@@ -19,7 +19,7 @@
 #define ZERO 0x27
 
 Keyboard::Keyboard() {
-  struct libusb_device_handle *keyboard = NULL;
+  struct libusb_device_handle *keyboard;
   uint8_t endpoint_addr;
   uint8_t *endpoint_address = &endpoint_addr;
 }
