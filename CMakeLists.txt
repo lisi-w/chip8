@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.20)
+cmake_minimum_required (VERSION 3.16)
 project (yachip8 C CXX)
 
 # GoogleTest snippet stolen from https://cmake.org/cmake/help/latest/module/FetchContent.html
@@ -22,4 +22,5 @@ endif()
 
 
 add_subdirectory (swproto)
+
 

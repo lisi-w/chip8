@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.16)
+project(keyboard)
+add_executable(keyboard_test keyboard_test.cpp keyboard.cpp keyboard.hpp)
+set_property(TARGET keyboard_test PROPERTY CXX_STANDARD 20)
+set_property(TARGET keyboard_test PROPERTY CXX_STANDARD_REQUIRED ON)
+target_link_libraries(keyboard_test usb-1.0)
