@@ -24,8 +24,8 @@ module display(input logic clk,
    logic [5:0] chip8_col;
    logic [4:0] chip8_row;
    logic [7:0] d_is_foreground;
-   logic [7:0] mac
-   assign mac = 8'h80 >> (chip8_col % 8);
+	logic [7:0] misc;
+   assign misc = 8'h80 >> (chip8_col % 8);
 
    assign disp_col = hcount[10:1];
    assign disp_row = vcount;
@@ -35,7 +35,7 @@ module display(input logic clk,
    assign chip8_area = (disp_col >= DISP_COL_OFFSET) && (disp_col < (DISP_COLS - DISP_COL_OFFSET)) 
                           && (disp_row >= DISP_ROW_OFFSET) && (disp_row < (DISP_ROWS - DISP_ROW_OFFSET));
    assign addr = (chip8_row * 8'h08) + ( chip8_row / 8);
-   assign d_is_foreground = data & mac;
+   assign d_is_foreground = data & misc;
    assign is_foreground = d_is_foreground > 0 ? 1 : 0;
 
 	always_comb begin 
