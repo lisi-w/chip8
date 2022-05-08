@@ -11,7 +11,7 @@ else()
 
   #file(GLOB_RECURSE ${VERILATOR_ROOT} "*.c" "*.h")
 
-  set(hw_test_sources hw_test.hpp hw_test.cpp mymodule_test.cpp)
+  set(hw_test_sources hw_test.hpp main.cpp chip_ram_test.cpp display_ram.cpp)
   list(LENGTH hw_test_sources hw_test_sources_nr)
 
   set(hw_test_include_dirs "")
@@ -22,7 +22,12 @@ else()
   set_target_properties(hw_test PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON)
-  verilate(hw_test TRACE SOURCES mymodule.sv)
+  # Each verilate() call may have only one top level module which gets turned
+  # into a .h file.
+  verilate(hw_test TRACE SOURCES chip_ram.sv)
+  verilate(hw_test TRACE SOURCES display_ram.sv)
+  verilate(hw_test TRACE SOURCES display.sv)
+  verilate(hw_test TRACE SOURCES cpu.sv)
 
   # We have to enable warnings piecemeal so as not to interfere
   # with Verilator.

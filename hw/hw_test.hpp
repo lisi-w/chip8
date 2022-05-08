@@ -43,6 +43,8 @@ protected:
       abort();
       return;
     }
+
+    dut_clk_member() = 0;
   }
 
   auto &&dut_clk_member();
