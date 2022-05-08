@@ -40,6 +40,7 @@ public:
   // TODO: IMPLEMENT BELOW DESTRUCTOR!!
   // ~Keyboard();
   bool find_keyboard();
+  struct libusb_device_handle *openkeyboard(uint8_t *);
   keys get_keys();
 };
 #endif
