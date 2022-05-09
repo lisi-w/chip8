@@ -1,16 +1,18 @@
 module display(input logic clk,
   // We ask for the byte at some address on the screen.
   output logic [7:0] addr,
-  input logic [7:0] data,
+//  input logic [7:0] data,
 
   output logic [7:0] VGA_R, VGA_G, VGA_B,
   output logic 	   VGA_CLK, VGA_HS, VGA_VS, VGA_BLANK_n,
   output logic 	   VGA_SYNC_n);
 
+   logic [7:0]  data;
    logic [10:0]	   hcount;
    logic [9:0]     vcount;  
 	
    fb_counters counters(.clk50(clk), .*);
+   display_ram ram1( .addr(addr), .data(data));
    parameter DISP_COLS = 10'd640;
    parameter DISP_ROWS = 10'd480;
    parameter DISP_COL_OFFSET = 10'd64;
@@ -24,7 +26,7 @@ module display(input logic clk,
    logic [5:0] chip8_col;
    logic [4:0] chip8_row;
    logic [7:0] d_is_foreground;
-	logic [7:0] misc;
+   logic [7:0] misc;
    assign misc = 8'h80 >> (chip8_col % 8);
 
    assign disp_col = hcount[10:1];
