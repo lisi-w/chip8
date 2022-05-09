@@ -11,7 +11,8 @@ else()
 
   #file(GLOB_RECURSE ${VERILATOR_ROOT} "*.c" "*.h")
 
-  set(hw_test_sources hw_test.hpp main.cpp chip_ram_test.cpp display_ram.cpp)
+  set(hw_test_sources hw_test.hpp main.cpp
+    chip_ram_test.cpp display_ram_test.cpp cpu_test.cpp)
   list(LENGTH hw_test_sources hw_test_sources_nr)
 
   set(hw_test_include_dirs "")
