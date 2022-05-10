@@ -111,17 +111,44 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named keyboard_test
+# Target rules for targets named menu
 
 # Build rule for target.
-keyboard_test: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 keyboard_test
-.PHONY : keyboard_test
+menu: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 menu
+.PHONY : menu
 
 # fast build rule for target.
-keyboard_test/fast:
-	$(MAKE) -f CMakeFiles/keyboard_test.dir/build.make CMakeFiles/keyboard_test.dir/build
-.PHONY : keyboard_test/fast
+menu/fast:
+	$(MAKE) -f CMakeFiles/menu.dir/build.make CMakeFiles/menu.dir/build
+.PHONY : menu/fast
+
+fbputchar.o: fbputchar.c.o
+
+.PHONY : fbputchar.o
+
+# target to build an object file
+fbputchar.c.o:
+	$(MAKE) -f CMakeFiles/menu.dir/build.make CMakeFiles/menu.dir/fbputchar.c.o
+.PHONY : fbputchar.c.o
+
+fbputchar.i: fbputchar.c.i
+
+.PHONY : fbputchar.i
+
+# target to preprocess a source file
+fbputchar.c.i:
+	$(MAKE) -f CMakeFiles/menu.dir/build.make CMakeFiles/menu.dir/fbputchar.c.i
+.PHONY : fbputchar.c.i
+
+fbputchar.s: fbputchar.c.s
+
+.PHONY : fbputchar.s
+
+# target to generate assembly for a file
+fbputchar.c.s:
+	$(MAKE) -f CMakeFiles/menu.dir/build.make CMakeFiles/menu.dir/fbputchar.c.s
+.PHONY : fbputchar.c.s
 
 keyboard.o: keyboard.cpp.o
 
@@ -129,7 +156,7 @@ keyboard.o: keyboard.cpp.o
 
 # target to build an object file
 keyboard.cpp.o:
-	$(MAKE) -f CMakeFiles/keyboard_test.dir/build.make CMakeFiles/keyboard_test.dir/keyboard.cpp.o
+	$(MAKE) -f CMakeFiles/menu.dir/build.make CMakeFiles/menu.dir/keyboard.cpp.o
 .PHONY : keyboard.cpp.o
 
 keyboard.i: keyboard.cpp.i
@@ -138,7 +165,7 @@ keyboard.i: keyboard.cpp.i
 
 # target to preprocess a source file
 keyboard.cpp.i:
-	$(MAKE) -f CMakeFiles/keyboard_test.dir/build.make CMakeFiles/keyboard_test.dir/keyboard.cpp.i
+	$(MAKE) -f CMakeFiles/menu.dir/build.make CMakeFiles/menu.dir/keyboard.cpp.i
 .PHONY : keyboard.cpp.i
 
 keyboard.s: keyboard.cpp.s
@@ -147,35 +174,35 @@ keyboard.s: keyboard.cpp.s
 
 # target to generate assembly for a file
 keyboard.cpp.s:
-	$(MAKE) -f CMakeFiles/keyboard_test.dir/build.make CMakeFiles/keyboard_test.dir/keyboard.cpp.s
+	$(MAKE) -f CMakeFiles/menu.dir/build.make CMakeFiles/menu.dir/keyboard.cpp.s
 .PHONY : keyboard.cpp.s
 
-keyboard_test.o: keyboard_test.cpp.o
+menu.o: menu.cpp.o
 
-.PHONY : keyboard_test.o
+.PHONY : menu.o
 
 # target to build an object file
-keyboard_test.cpp.o:
-	$(MAKE) -f CMakeFiles/keyboard_test.dir/build.make CMakeFiles/keyboard_test.dir/keyboard_test.cpp.o
-.PHONY : keyboard_test.cpp.o
+menu.cpp.o:
+	$(MAKE) -f CMakeFiles/menu.dir/build.make CMakeFiles/menu.dir/menu.cpp.o
+.PHONY : menu.cpp.o
 
-keyboard_test.i: keyboard_test.cpp.i
+menu.i: menu.cpp.i
 
-.PHONY : keyboard_test.i
+.PHONY : menu.i
 
 # target to preprocess a source file
-keyboard_test.cpp.i:
-	$(MAKE) -f CMakeFiles/keyboard_test.dir/build.make CMakeFiles/keyboard_test.dir/keyboard_test.cpp.i
-.PHONY : keyboard_test.cpp.i
+menu.cpp.i:
+	$(MAKE) -f CMakeFiles/menu.dir/build.make CMakeFiles/menu.dir/menu.cpp.i
+.PHONY : menu.cpp.i
 
-keyboard_test.s: keyboard_test.cpp.s
+menu.s: menu.cpp.s
 
-.PHONY : keyboard_test.s
+.PHONY : menu.s
 
 # target to generate assembly for a file
-keyboard_test.cpp.s:
-	$(MAKE) -f CMakeFiles/keyboard_test.dir/build.make CMakeFiles/keyboard_test.dir/keyboard_test.cpp.s
-.PHONY : keyboard_test.cpp.s
+menu.cpp.s:
+	$(MAKE) -f CMakeFiles/menu.dir/build.make CMakeFiles/menu.dir/menu.cpp.s
+.PHONY : menu.cpp.s
 
 # Help Target
 help:
@@ -185,13 +212,16 @@ help:
 	@echo "... depend"
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
-	@echo "... keyboard_test"
+	@echo "... menu"
+	@echo "... fbputchar.o"
+	@echo "... fbputchar.i"
+	@echo "... fbputchar.s"
 	@echo "... keyboard.o"
 	@echo "... keyboard.i"
 	@echo "... keyboard.s"
-	@echo "... keyboard_test.o"
-	@echo "... keyboard_test.i"
-	@echo "... keyboard_test.s"
+	@echo "... menu.o"
+	@echo "... menu.i"
+	@echo "... menu.s"
 .PHONY : help
 
 
