@@ -4,10 +4,21 @@
  *
  * Name/UNI: Elysia Witham (ew2632)
  */
-#include "fbputchar.h"
 #include "keyboard.hpp"
+#include "fpga_ram.h"
 #include <iostream>
 #include <cstdlib>
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <cstring>
+
+#define GAME1_INSTR 0x00
+#define GAME2_INSTR 0x00
+#define GAME3_INSTR 0x00
+#define GAME4_INSTR 0x00
+#define GAME5_INSTR 0x00
 
 /*
  * References:
@@ -17,30 +28,37 @@
  * 
  */
 
+int chip8_fd;
 
-void clear_screen() {
-  for (int col = 0; col < 64; col++) {
-    for (int row = 0; row < 24; row++) {
-      fbputchar(' ', row, col);
-    }
+void print_mem(unsigned char addr) {
+  fpga_ram_arg_t real_vla;
+  real_vla.address = addr;
+  real_vla.data = 0x04;
+//  printf("OUTSIDE: %02x\n" , real_vla.address);
+  if (ioctl(chip8_fd, FPGA_RAM_READ, &real_vla)) {
+      perror("ioctl(FPGA_RAM_READ) failed");
+      return;
+  }
+  printf("%02x\n",
+	real_vla.data);
+
+}
+
+/* Set the background color */
+void set_mem(fpga_ram_arg_t *vla)
+{
+  fpga_ram_arg_t real_vla;
+  real_vla.address = vla->address;
+  real_vla.data = vla->data;
+  //printf("OUTSIDE: %02x\n" , real_vla.data);
+  if (ioctl(chip8_fd, FPGA_RAM_WRITE, &real_vla)) {
+      perror("ioctl(FPGA_RAM_WRITE) failed");
+      return;
   }
 }
 
 int main()
 {
-  int err, col;
-
-  if ((err = fbopen()) != 0) {
-    std::cerr << "Error: Could not open framebuffer\n";
-    exit(1);
-  }
-
-  clear_screen();
-  fbputs("1. game1", 1, 5);
-  fbputs("2. game2", 2, 5);
-  fbputs("3. game3", 3, 5);
-  fbputs("4. game4", 4, 5);
-  fbputs("5. game5", 5, 5);
 
   /* Open the keyboard */
   Keyboard keyboard_obj;
@@ -49,29 +67,42 @@ int main()
     exit(1);
   }
   std::cout << "Keyboard initialized\n";
+  
+  /* set up chip 8 userspace */
+  static const char filename[] = "";
+  std::cout << "CHIP 8 Userspace program started\n";
+  fpga_ram_arg_t my_mem_args;
+  my_mem_args.data = 0x07;
+  my_mem_args.address = 0x07;
+
+  if ( (chip8_fd = open(filename, O_RDWR)) == -1) {
+    std::cerr << "could not open file\n";
+    return -1;
+  }
+  memset(&my_mem_args, 0, sizeof(fpga_ram_arg_t));
 
   /* Look for and handle keypresses */
   for (;;) {
     Keyboard::keys keys = keyboard_obj.get_keys();
     if (keys.game1) {
-      clear_screen();
-      fbputs("Game 1 Selected", 1, 5);
+      std::cout << "Game 1 selected\n";
+      print_mem(GAME1_INSTR);
     }
     else if (keys.game2) {
-      clear_screen();
-      fbputs("Game 2 Selected", 1, 5);
+      std::cout << "Game 2 selected\n";
+      print_mem(GAME2_INSTR);
     }
     else if (keys.game3) {
-      clear_screen();
-      fbputs("Game 3 Selected", 1, 5);
+      std::cout << "Game 3 selected\n";
+      print_mem(GAME3_INSTR);
     }
     else if (keys.game4) {
-      clear_screen();
-      fbputs("Game 4 Selected", 1, 5);
+      std::cout << "Game 4 selected\n";
+      print_mem(GAME4_INSTR);
     }
     else if (keys.game5) {
-      clear_screen();
-      fbputs("Game 5 Selected", 1, 5);
+      std::cout << "Game 5 selected\n";
+      print_mem(GAME5_INSTR);
     }
     std::cout << (int)keys.keypad << std::endl;
   }
