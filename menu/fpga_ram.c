@@ -50,40 +50,18 @@ struct fpga_ram_dev {
  * Write segments of a single digit
  * Assumes digit is in range and the device information has been set up
  */
-static void write_ram(fpga_ram_arg_t *ram_args)
-{
-
-    //int i;
-    //for (i = 0; i < 64; i++){
-    //   printk ("DATA at %d: %02x\n", i, ioread32(dev.virtbase+i)); 
-    //}
-//
-    //printk ("WRITE: %02x to %02x \n",ram_args-> data,ram_args->address ); 
+static void write_ram(fpga_ram_arg_t *ram_args) {
     iowrite8(ram_args->data, VIRT_OFF(dev.virtbase, ram_args->address));
     dev.ram_args = *ram_args;
-    //for (i = 0; i < 64; i++){
-    //   printk ("DATA at %d: %02x\n", i, ioread32(dev.virtbase+i)); 
-    //}
 }
 
 /*
  * Write segments of a single digit
  * Assumes digit is in range and the device information has been set up
  */
-static void write_ram_long(fpga_ram_arg_t *ram_args)
-{
-
-    //int i;
-    //for (i = 0; i < 64; i++){
-    //   printk ("DATA at %d: %02x\n", i, ioread32(dev.virtbase+i)); 
-    //}
-//
-    printk ("WRITE: %02x to %02x \n",ram_args-> data,ram_args->address ); 
+static void write_ram_long(fpga_ram_arg_t *ram_args) {
     iowrite32(ram_args->data, VIRT_OFF_LONG(dev.virtbase, ram_args->address));
     dev.ram_args = *ram_args;
-    //for (i = 0; i < 64; i++){
-    //   printk ("DATA at %d: %02x\n", i, ioread32(dev.virtbase+i)); 
-    //}
 }
 
 
@@ -121,7 +99,6 @@ static long fpga_ram_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 		write_ram_long(&vla);
 		break;
 	case FPGA_RAM_READ:
-                //printk("addr:%d\n", arg);
         if (copy_from_user(&vla,(fpga_ram_arg_t *) arg, 
                            sizeof (fpga_ram_arg_t)))
                  return -EACCES;
@@ -166,10 +143,9 @@ static struct miscdevice fpga_ram_misc_device = {
  */
 static int __init fpga_ram_probe(struct platform_device *pdev)
 {
-    // no need to write anything   fpga_ram_arg_t zeros = {  };
 	int ret;
 
-	/* Register ourselves as a misc device: creates /dev/vga_ball */
+	/* Register ourselves as a misc device: creates /dev/chip8 */
 	ret = misc_register(&fpga_ram_misc_device);
 
 	/* Get the address of our registers from the device tree */
@@ -194,7 +170,6 @@ static int __init fpga_ram_probe(struct platform_device *pdev)
 	}
         
 	/* Set an initial mem val?  */
-      //  write_ram(&zeros);
 
 	return 0;
 
@@ -217,7 +192,7 @@ static int fpga_ram_remove(struct platform_device *pdev)
 /* Which "compatible" string(s) to search for in the Device Tree */
 #ifdef CONFIG_OF
 static const struct of_device_id fpga_ram_of_match[] = {
-	{ .compatible = "csee4840,vga_ball-1.0" },
+	{ .compatible = "csee4840,chip8-1.0" },
 	{},
 };
 MODULE_DEVICE_TABLE(of, fpga_ram_of_match);

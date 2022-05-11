@@ -34,7 +34,6 @@ void print_mem(unsigned char addr) {
   fpga_ram_arg_t real_vla;
   real_vla.address = addr;
   real_vla.data = 0x04;
-//  printf("OUTSIDE: %02x\n" , real_vla.address);
   if (ioctl(chip8_fd, FPGA_RAM_READ, &real_vla)) {
       perror("ioctl(FPGA_RAM_READ) failed");
       return;
@@ -50,7 +49,6 @@ void set_mem(fpga_ram_arg_t *vla)
   fpga_ram_arg_t real_vla;
   real_vla.address = vla->address;
   real_vla.data = vla->data;
-  //printf("OUTSIDE: %02x\n" , real_vla.data);
   if (ioctl(chip8_fd, FPGA_RAM_WRITE, &real_vla)) {
       perror("ioctl(FPGA_RAM_WRITE) failed");
       return;
