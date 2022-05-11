@@ -14,11 +14,12 @@
 #include <fcntl.h>
 #include <cstring>
 
-#define GAME1_INSTR 0x00
-#define GAME2_INSTR 0x00
-#define GAME3_INSTR 0x00
-#define GAME4_INSTR 0x00
-#define GAME5_INSTR 0x00
+#define PONG_INSTR 0x00
+#define TETRIS_INSTR 0x00
+#define SPACE_INVADERS_INSTR 0x00
+#define SOCCER_INSTR 0x00
+#define CAVE_INSTR 0x00
+#define START_SCREEN 0x00
 
 /*
  * References:
@@ -30,7 +31,7 @@
 
 int chip8_fd;
 
-void set_mem(unsigned int instr)
+void send_instr(unsigned int instr)
 {
   if (ioctl(chip8_fd, CHIP8_INSTR_WRITE, &instr)) {
       perror("ioctl(CHIP8_INSTR_WRITE) failed");
@@ -49,6 +50,7 @@ int main()
   }
   std::cout << "Keyboard initialized\n";
   unsigned int chip8_instr;
+  int in_game;
   
   /* set up chip 8 userspace */
   static const char filename[] = "/dev/chip8";
@@ -62,27 +64,42 @@ int main()
   /* Look for and handle keypresses */
   for (;;) {
     Keyboard::keys keys = keyboard_obj.get_keys();
-    if (keys.game1) {
+    if (in_game) {
+      if (keys.escape) {
+        in_game = 0;
+        continue;
+      }
+      std::cout << (int)keys.keypad << std::endl;
+      send_instr(keys.keypad);
+    }
+    else if (keys.game1) {
       std::cout << "Game 1 selected\n";
-      set_mem(GAME1_INSTR);
+      send_instr(PONG_INSTR);
+      in_game = 1;
     }
     else if (keys.game2) {
       std::cout << "Game 2 selected\n";
-      set_mem(GAME2_INSTR);
+      send_instr(TETRIS_INSTR);
+      in_game = 1;
     }
     else if (keys.game3) {
       std::cout << "Game 3 selected\n";
-      set_mem(GAME3_INSTR);
+      send_instr(SPACE_INVADERS_INSTR);
+      in_game = 1;
     }
     else if (keys.game4) {
       std::cout << "Game 4 selected\n";
-      set_mem(GAME4_INSTR);
+      send_instr(SOCCER_INSTR);
+      in_game = 1;
     }
     else if (keys.game5) {
       std::cout << "Game 5 selected\n";
-      set_mem(GAME5_INSTR);
+      send_instr(CAVE_INSTR);
+      in_game = 1;
     }
-    std::cout << (int)keys.keypad << std::endl;
+    else {
+      send_instr(START_SCREEN);
+    }
   }
 
   return 0;

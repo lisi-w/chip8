@@ -111,44 +111,71 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named menu
+# Target rules for targets named chip8
 
 # Build rule for target.
-menu: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 menu
-.PHONY : menu
+chip8: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 chip8
+.PHONY : chip8
 
 # fast build rule for target.
-menu/fast:
-	$(MAKE) -f CMakeFiles/menu.dir/build.make CMakeFiles/menu.dir/build
-.PHONY : menu/fast
+chip8/fast:
+	$(MAKE) -f CMakeFiles/chip8.dir/build.make CMakeFiles/chip8.dir/build
+.PHONY : chip8/fast
 
-fpga_ram.o: fpga_ram.c.o
+chip8.o: chip8.c.o
 
-.PHONY : fpga_ram.o
+.PHONY : chip8.o
 
 # target to build an object file
-fpga_ram.c.o:
-	$(MAKE) -f CMakeFiles/menu.dir/build.make CMakeFiles/menu.dir/fpga_ram.c.o
-.PHONY : fpga_ram.c.o
+chip8.c.o:
+	$(MAKE) -f CMakeFiles/chip8.dir/build.make CMakeFiles/chip8.dir/chip8.c.o
+.PHONY : chip8.c.o
 
-fpga_ram.i: fpga_ram.c.i
+chip8.i: chip8.c.i
 
-.PHONY : fpga_ram.i
+.PHONY : chip8.i
 
 # target to preprocess a source file
-fpga_ram.c.i:
-	$(MAKE) -f CMakeFiles/menu.dir/build.make CMakeFiles/menu.dir/fpga_ram.c.i
-.PHONY : fpga_ram.c.i
+chip8.c.i:
+	$(MAKE) -f CMakeFiles/chip8.dir/build.make CMakeFiles/chip8.dir/chip8.c.i
+.PHONY : chip8.c.i
 
-fpga_ram.s: fpga_ram.c.s
+chip8.s: chip8.c.s
 
-.PHONY : fpga_ram.s
+.PHONY : chip8.s
 
 # target to generate assembly for a file
-fpga_ram.c.s:
-	$(MAKE) -f CMakeFiles/menu.dir/build.make CMakeFiles/menu.dir/fpga_ram.c.s
-.PHONY : fpga_ram.c.s
+chip8.c.s:
+	$(MAKE) -f CMakeFiles/chip8.dir/build.make CMakeFiles/chip8.dir/chip8.c.s
+.PHONY : chip8.c.s
+
+chip8_start.o: chip8_start.cpp.o
+
+.PHONY : chip8_start.o
+
+# target to build an object file
+chip8_start.cpp.o:
+	$(MAKE) -f CMakeFiles/chip8.dir/build.make CMakeFiles/chip8.dir/chip8_start.cpp.o
+.PHONY : chip8_start.cpp.o
+
+chip8_start.i: chip8_start.cpp.i
+
+.PHONY : chip8_start.i
+
+# target to preprocess a source file
+chip8_start.cpp.i:
+	$(MAKE) -f CMakeFiles/chip8.dir/build.make CMakeFiles/chip8.dir/chip8_start.cpp.i
+.PHONY : chip8_start.cpp.i
+
+chip8_start.s: chip8_start.cpp.s
+
+.PHONY : chip8_start.s
+
+# target to generate assembly for a file
+chip8_start.cpp.s:
+	$(MAKE) -f CMakeFiles/chip8.dir/build.make CMakeFiles/chip8.dir/chip8_start.cpp.s
+.PHONY : chip8_start.cpp.s
 
 keyboard.o: keyboard.cpp.o
 
@@ -156,7 +183,7 @@ keyboard.o: keyboard.cpp.o
 
 # target to build an object file
 keyboard.cpp.o:
-	$(MAKE) -f CMakeFiles/menu.dir/build.make CMakeFiles/menu.dir/keyboard.cpp.o
+	$(MAKE) -f CMakeFiles/chip8.dir/build.make CMakeFiles/chip8.dir/keyboard.cpp.o
 .PHONY : keyboard.cpp.o
 
 keyboard.i: keyboard.cpp.i
@@ -165,7 +192,7 @@ keyboard.i: keyboard.cpp.i
 
 # target to preprocess a source file
 keyboard.cpp.i:
-	$(MAKE) -f CMakeFiles/menu.dir/build.make CMakeFiles/menu.dir/keyboard.cpp.i
+	$(MAKE) -f CMakeFiles/chip8.dir/build.make CMakeFiles/chip8.dir/keyboard.cpp.i
 .PHONY : keyboard.cpp.i
 
 keyboard.s: keyboard.cpp.s
@@ -174,35 +201,8 @@ keyboard.s: keyboard.cpp.s
 
 # target to generate assembly for a file
 keyboard.cpp.s:
-	$(MAKE) -f CMakeFiles/menu.dir/build.make CMakeFiles/menu.dir/keyboard.cpp.s
+	$(MAKE) -f CMakeFiles/chip8.dir/build.make CMakeFiles/chip8.dir/keyboard.cpp.s
 .PHONY : keyboard.cpp.s
-
-menu.o: menu.cpp.o
-
-.PHONY : menu.o
-
-# target to build an object file
-menu.cpp.o:
-	$(MAKE) -f CMakeFiles/menu.dir/build.make CMakeFiles/menu.dir/menu.cpp.o
-.PHONY : menu.cpp.o
-
-menu.i: menu.cpp.i
-
-.PHONY : menu.i
-
-# target to preprocess a source file
-menu.cpp.i:
-	$(MAKE) -f CMakeFiles/menu.dir/build.make CMakeFiles/menu.dir/menu.cpp.i
-.PHONY : menu.cpp.i
-
-menu.s: menu.cpp.s
-
-.PHONY : menu.s
-
-# target to generate assembly for a file
-menu.cpp.s:
-	$(MAKE) -f CMakeFiles/menu.dir/build.make CMakeFiles/menu.dir/menu.cpp.s
-.PHONY : menu.cpp.s
 
 # Help Target
 help:
@@ -212,16 +212,16 @@ help:
 	@echo "... depend"
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
-	@echo "... menu"
-	@echo "... fpga_ram.o"
-	@echo "... fpga_ram.i"
-	@echo "... fpga_ram.s"
+	@echo "... chip8"
+	@echo "... chip8.o"
+	@echo "... chip8.i"
+	@echo "... chip8.s"
+	@echo "... chip8_start.o"
+	@echo "... chip8_start.i"
+	@echo "... chip8_start.s"
 	@echo "... keyboard.o"
 	@echo "... keyboard.i"
 	@echo "... keyboard.s"
-	@echo "... menu.o"
-	@echo "... menu.i"
-	@echo "... menu.s"
 .PHONY : help
 
 
