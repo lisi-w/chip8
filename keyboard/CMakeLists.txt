@@ -1,6 +1,0 @@
-cmake_minimum_required(VERSION 3.16)
-project(keyboard)
-add_executable(menu menu.cpp keyboard.cpp keyboard.hpp fbputchar.c fbputchar.h)
-set_property(TARGET menu PROPERTY CXX_STANDARD 20)
-set_property(TARGET menu PROPERTY CXX_STANDARD_REQUIRED ON)
-target_link_libraries(menu usb-1.0)

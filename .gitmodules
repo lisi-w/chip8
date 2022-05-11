@@ -1,4 +1,0 @@
-[submodule "reference_implementation"]
-	path = reference_implementation
-	url = git@github.com:mir3z/chip8-emu.git
-  shallow = true
