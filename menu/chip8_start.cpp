@@ -193,22 +193,22 @@ int main()
     }
     else if (keys.game1) {
       std::cout << "Pong selected\n";
-      load_rom("pong.hex");
+      load_rom("roms/pong.hex");
       in_game = 1;
     }
     else if (keys.game2) {
       std::cout << "Tetris selected\n";
-      load_rom("tetris.hex");
+      load_rom("roms/tetris.hex");
       in_game = 1;
     }
     else if (keys.game3) {
       std::cout << "Space Invaders selected\n";
-      load_rom("space_invaders.hex");
+      load_rom("roms/space_invaders.hex");
       in_game = 1;
     }
     else if (keys.game4) {
       std::cout << "Soccer selected\n";
-      load_rom("soccer.hex");
+      load_rom("roms/soccer.hex");
       in_game = 1;
     }
     else if (keys.game5) {
