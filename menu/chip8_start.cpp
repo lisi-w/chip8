@@ -4,9 +4,11 @@
  *
  * Name/UNI: Elysia Witham (ew2632)
  */
+using namespace std;
 #include "keyboard.hpp"
 #include "chip8.h"
 #include <iostream>
+#include <cstdio>
 #include <cstdlib>
 #include <sys/ioctl.h>
 #include <sys/types.h>
@@ -57,7 +59,7 @@ void close_prog(int signal) {
 void send_opcode(opcode *op)
 {
   if (ioctl(chip8_fd, CHIP8_INSTR_WRITE, op)) {
-      perror("ioctl(CHIP8_INSTR_WRITE) failed");
+      std::cerr << "ioctl(CHIP8_INSTR_WRITE) failed";
       close_prog(-1);
   }
 }
