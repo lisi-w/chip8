@@ -14,8 +14,10 @@
  * "make" to build
  * insmod chip8.ko
  *
- * Check code style with
- * checkpatch.pl --file --no-tree chip8.c
+ */
+
+/* Adapted for use with CHIP8 Final Project
+ * Elysia Witham
  */
 
 #include <linux/module.h>

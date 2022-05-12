@@ -1,6 +1,6 @@
 /*
  *
- * CSEE 4840 Lab 2 for 2022
+ * CSEE 4840 CHIP8 Final Project for 2022
  *
  * Name/UNI: Elysia Witham (ew2632)
  */
@@ -44,8 +44,10 @@ static int CHIP8_FONTSET[] =
 /*
  * References:
  *
- * http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html
- * http://www.thegeekstuff.com/2011/12/c-socket-programming/
+ * https://chip8.danirod.es/docs/current/manual/Compatible-ROM-formats.html
+ * http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#2.3
+ * https://mats.sh/posts/chip8-fpga/#introduction
+ * Labs 2 & 3, and other class material
  * 
  */
 
