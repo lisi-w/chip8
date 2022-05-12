@@ -35,6 +35,7 @@ public:
     bool escape : 1, enter : 1;
     bool game1 : 1, game2 : 1, game3 : 1, game4 : 1, game5 : 1, game6 : 1;
     uint16_t keypad;
+    uint8_t keycode[6];
   };
   Keyboard();
   // TODO: IMPLEMENT BELOW DESTRUCTOR!!

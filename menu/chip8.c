@@ -36,7 +36,6 @@
 #define DRIVER_NAME "chip8"
 #define VIRT_OFF(x,a) ((x)+(a))
 #define VIRT_OFF_LONG(x, a) ((x)+(4*(a)))
-#define ADDRESS 0x00 // MEMORY ADDRESS: TODO
 
 /*
  * Information about our device
@@ -44,16 +43,14 @@
 struct chip8_dev {
 	struct resource res; /* Resource: our registers */
 	void __iomem *virtbase; /* Where registers can be accessed in memory */
-        unsigned int instr;
 } dev;
 
 /*
  * Write segments of a single digit
  * Assumes digit is in range and the device information has been set up
  */
-static void write_instr(unsigned int instr) {
-    iowrite8(instr, VIRT_OFF(dev.virtbase, ADDRESS));
-    dev.instr = instr;
+static void write_instr(unsigned int addr, unsigned int instr) {
+    iowrite8(instr, VIRT_OFF(dev.virtbase, addr));
 }
 
 /*
@@ -63,14 +60,14 @@ static void write_instr(unsigned int instr) {
  */
 static long chip8_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
-	unsigned int instruction;
+	opcode op;
 
 	switch (cmd) {
 	case CHIP8_INSTR_WRITE:
-		if (copy_from_user(&instruction, (unsigned int *) arg,
-				   sizeof(unsigned int)))
+		if (copy_from_user(&op, (opcode *) arg,
+				   sizeof(opcode)))
 			return -EACCES;
-		write_ram(instruction);
+		write_instr(op.addr, op.data);
 		break;
 
 	default:

@@ -108,51 +108,67 @@ Keyboard::keys Keyboard::get_keys() {
       switch (packet.keycode[i]) {
       case 0x1E:
         pressed_keys.keypad |= 1 << 0x1;
+        pressed_keys.keycode[i] = packet.keycode[i];
         break;
       case 0x1F:
         pressed_keys.keypad |= 1 << 0x2;
+        pressed_keys.keycode[i] = packet.keycode[i];
         break;
       case 0x20:
         pressed_keys.keypad |= 1 << 0x3;
+        pressed_keys.keycode[i] = packet.keycode[i];
         break;
       case 0x21:
         pressed_keys.keypad |= 1 << 0xC;
+        pressed_keys.keycode[i] = packet.keycode[i];
         break;
       case 0x14:
         pressed_keys.keypad |= 1 << 0x4;
+        pressed_keys.keycode[i] = packet.keycode[i];
         break;
       case 0x1A:
         pressed_keys.keypad |= 1 << 0x5;
+        pressed_keys.keycode[i] = packet.keycode[i];
         break;
       case 0x08:
         pressed_keys.keypad |= 1 << 0x6;
+        pressed_keys.keycode[i] = packet.keycode[i];
         break;
       case 0x15:
         pressed_keys.keypad |= 1 << 0xD;
+        pressed_keys.keycode[i] = packet.keycode[i];
         break;
       case 0x04:
         pressed_keys.keypad |= 1 << 0x7;
+        pressed_keys.keycode[i] = packet.keycode[i];
         break;
       case 0x16:
         pressed_keys.keypad |= 1 << 0x8;
+        pressed_keys.keycode[i] = packet.keycode[i];
         break;
       case 0x07:
         pressed_keys.keypad |= 1 << 0x9;
+        pressed_keys.keycode[i] = packet.keycode[i];
         break;
       case 0x09:
         pressed_keys.keypad |= 1 << 0xE;
+        pressed_keys.keycode[i] = packet.keycode[i];
         break;
       case 0x1D:
         pressed_keys.keypad |= 1 << 0xA;
+        pressed_keys.keycode[i] = packet.keycode[i];
         break;
       case 0x1B:
         pressed_keys.keypad |= 1 << 0x0;
+        pressed_keys.keycode[i] = packet.keycode[i];
         break;
       case 0x06:
         pressed_keys.keypad |= 1 << 0xB;
+        pressed_keys.keycode[i] = packet.keycode[i];
         break;
       case 0x19:
         pressed_keys.keypad |= 1 << 0xF;
+        pressed_keys.keycode[i] = packet.keycode[i];
         break;
       case ESC:
         pressed_keys.escape = 1;
